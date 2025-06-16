@@ -1,0 +1,189 @@
+# .clinerules
+
+1. Basics  
+   - "namespace" = IRIS namespace  
+   - "package" prefix = class prefix  
+   - Do not create classes or properties with '%' or '_'
+   - Class parameter names must not contain underscore ('_') characters - use camel case (e.g., "MyParameter") or all caps without underscores (e.g., "MYPARAM" or "MYPARAMETER") instead
+
+2. Explicit Rules in Chat  
+   - Any references to these rules (e.g. "(Ref:Write ObjectScript…)") must only appear in chat conversation, not in permanent source code files.
+
+3. Write ObjectScript  
+   - Return a %Status from methods that produce no return value.  
+   - First line: Set tSC = $$$OK  
+   - Last line: Quit tSC  
+   - Use try/catch for error trapping  
+   - Use doc comment banners with HTML/DocBook markup
+   - CRITICAL: ObjectScript macro syntax must use triple dollar signs ($$$) not double ($$)
+   - If encountering multiple $$ syntax errors in a file, use write_to_file for full replacement rather than multiple replace_in_file operations
+
+4. Editing Files  
+   - Seek user approval before editing Markdown outside memory-bank/.  
+   - Only modify .cls files within src/MA or src/MALIB.
+   - When replace_in_file fails to resolve typos or syntax errors, use write_to_file for full file replacement
+   - Use full file replacement (write_to_file) when multiple syntax corrections are needed to avoid cascading errors
+   - CRITICAL: Always use write_to_file for $ vs $$ macro syntax fixes - never use replace_in_file for these issues
+
+5. InterSystems Libraries  
+   - Use built-in IRIS classes/packages for performance and maintainability.
+
+6. Naming Conventions  
+   - Parameters have "p" prefix (e.g., pItem).  
+   - Local variables have "t" prefix (e.g., tIndex).  
+   - Class properties are capitalized with no prefix.
+   - Class Parameters must be accessed using the # character (e.g., ..#PARAMETERNAME).
+
+7. Comments  
+   - Semicolon for single-line comments  
+   - Class/Method banners must have HTML & DocBook markup
+
+8. Additional Rules in Memory Bank
+   - Follow the additional rules found in the memory bank.   In particular observe the rules in memory-bank/permanent/objectscriptrules.md
+
+9. Indentation and Formatting
+   - Always indent ObjectScript commands within methods by at least 1 space or tab to avoid compile errors.
+   - Ensure each code block is consistently spaced to maintain readability and proper compilation in IRIS.
+   - When editing ObjectScript class files, prefer reading the entire file then writing the full content back, rather than partial search-replace, to maintain indentation integrity.
+
+10. Python Integration
+   - Read documention/IRIS_Embedded_Python_Complete_Manual.md at the start of any session that intends to use Python
+   - Prefer native ObjectScript for IRIS operations (globals, persistence, SQL, transactions)
+   - Use embedded Python only for external library integration (OpenAI, NumPy, ML libraries, document processing)
+   - Follow embedded Python patterns: %SYS.Python.Import() for libraries, [Language = python] for methods
+   - Use 'import iris' bridge when calling IRIS from Python code
+   - Maintain backward compatibility with mock implementations as fallbacks
+   - CRITICAL: ##class(%SYS.Python).IsAvailable() does NOT exist - use ##class(%SYS.Python).GetPythonVersion() and check if it returns "Not Loaded"
+
+Follow these guidelines for all future ObjectScript development. In the chat, you may reference a rule with a short note, but do not embed these references in the source code.
+
+## Ensemble Architecture Guidance
+- When creating Business Services or Business Operations in Ensemble, ensure method signatures exactly match the InterSystems-defined definitions, for example:
+  • OnProcessInput(pInput As %RegisteredObject, Output pOutput As %RegisteredObject, ByRef pHint As %String).
+  • OnMessage(pRequest As MyRequestClass, Output pResponse As MyResponseClass).
+- Use custom classes extending Ens.Request/Ens.Response to handle data exchange between services and operations.
+- Verify the proper IRIS adapter is specified on each Business Service/Operation (e.g., EnsLib.File.InboundAdapter, EnsLib.File.OutboundAdapter).
+- Carefully implement synchronous vs. asynchronous flows depending on production requirements.
+- Always confirm that the method arguments match the correct data types expected by Ensemble, to avoid signature errors.
+- Thoroughly review the relevant built-in Ensemble classes (Ens.BusinessService, Ens.BusinessProcess, Ens.BusinessOperation) for method signatures and best practices before extending them.
+
+## IRIS Session Access
+- I do NOT have access to IRIS session terminal or direct IRIS command execution
+- Any IRIS commands (like "iris session iris -U OPTIRAG") must be executed by the user
+- I can only read/write files and provide ObjectScript code for the user to execute
+- When testing is needed, I should provide the specific ObjectScript commands for the user to run in their IRIS session
+
+## Research and Knowledge Resources
+- Use Perplexity MCP as a reference source when uncertain about ObjectScript syntax, problem-solving approaches, or specification details
+- Always research with Perplexity MCP before attempting solutions when knowledge is incomplete
+- Consult Perplexity MCP for best practices, error resolution, and technical implementation guidance in ObjectScript and IRIS
+
+## ObjectScript Collection and Object Handling
+- CRITICAL: ObjectScript's $listbuild() and $list() functions serialize objects to strings, losing object identity
+- When storing objects temporarily, use individual variables (Set obj1 = ..., Set obj2 = ...) rather than lists
+- For unit tests, avoid $listbuild() when testing object properties - use direct object assignment instead
+- Collection errors like "<INVALID OREF>" often indicate attempts to access serialized objects as if they were still objects
+- When debugging collection issues, check for batch processing logic that may be accessing invalid object references
+
+## Debugging and Error Resolution Patterns
+- For "<INVALID OREF>" errors in collections: Look for object serialization issues or invalid object references in batch processing code
+- For unit test failures with $ISOBJECT(): Check if objects are being stored in lists and losing object identity
+- When multiple $ vs $$ syntax errors occur: Always use write_to_file for full replacement rather than multiple replace_in_file operations
+- For complex ObjectScript debugging: Simplify architecture by eliminating unnecessary complexity (batch processing, complex collections) in favor of simple, reliable patterns
+- Architecture principle: Choose reliability and maintainability over performance optimization when debugging complex issues
+
+## IRIS Vector Search and Embedding Operations
+- CRITICAL: Vector operations require exact datatype compatibility between query and stored embeddings
+- Common SQL Error -259: "Cannot perform vector operation on vectors of different datatypes" indicates datatype mismatch
+- SOLUTION: Use IRIS native embedding generation for query embeddings to match stored embedding types
+- Pattern: Create temporary DocumentChunk with same MODEL parameter, use IRIS auto-embedding generation, extract result
+- Vector search diagnostic approach: Create comprehensive diagnostic methods to isolate SQL query vs embedding generation issues
+- Always use %Library.Embedding datatype for IRIS vector operations, not %Vector datatype
+- Test vector operations with simple queries first, then complex semantic searches
+- Realistic similarity scores for vector search: High relevance (0.6-0.8), Medium (0.3-0.6), Low (0.2-0.4)
+
+## IRIS Session MCP Server Project Intelligence
+### Proven Architecture Patterns (MVP Implementation Complete)
+- **Session Management**: Use IRIS globals (^SessionMCP.State) for persistent session state across disconnections
+- **Session IDs**: Always use GUID-based unique identifiers with $SYSTEM.Util.CreateGUID() for session isolation
+- **Command Execution**: Direct XECUTE with $NAMESPACE switching is more reliable than complex I/O redirection
+- **Error Handling**: Always wrap command execution in try/catch with structured JSON error responses
+- **Timeout Management**: 24-hour session expiration with CleanupExpiredSessions() method for maintenance
+- **API Design**: JSON response format enables clean Native API integration with JavaScript clients
+
+### JavaScript MCP Client Development Patterns
+- **Zero Dependencies**: Pure Node.js implementation without external dependencies for maximum compatibility
+- **Mock Fallback**: Always implement mock mode for development without live IRIS connection
+- **Clean ES6+ Patterns**: Use async/await throughout with proper error handling
+- **STDIO Transport**: Use STDIO transport for universal compatibility across MCP client applications
+- **Session Tracking**: Mirror session state in JavaScript client for performance and debugging
+- **Error Translation**: Convert IRIS ObjectScript errors to meaningful MCP error responses
+
+### Integration Architecture Insights
+- **Native API Reliability**: Node.js can call IRIS through various connectivity patterns (future implementation)
+- **JSON Communication**: Use structured JSON for all IRIS-JavaScript communication for maintainability
+- **Tool Definition Schema**: Proper MCP tool schema definition critical for AI agent understanding
+- **Configuration Management**: Minimal configuration approach - prefer convention over configuration
+- **Testing Strategy**: Mock mode validation framework essential for reliable integration testing
+
+### Critical Implementation Patterns
+- **ObjectScript Class Structure**: SessionMCP.Core.Session pattern scales well for additional functionality
+- **Method Signatures**: All class methods return JSON strings for consistent Native API integration
+- **Global Storage**: Use subscripted globals for efficient session data organization
+- **Namespace Handling**: Always validate and switch namespaces before command execution
+- **Resource Cleanup**: Implement both manual and automatic cleanup methods for production reliability
+
+### Quality and Testing Intelligence
+- **Unit Testing**: Comprehensive test coverage (7 test methods) validates all error paths and functionality
+- **Validation Framework**: Automated validation with both mock and live testing modes
+- **Mock Development**: Mock implementations enable development/testing without full IRIS deployment
+- **Integration Testing**: End-to-end validation from Python MCP client through IRIS backend
+- **Performance Baseline**: Session operations <100ms, command execution varies by complexity
+
+### Deployment and Operations Patterns
+- **Package Structure**: src/SessionMCP organization allows clean package compilation
+- **Dependency Management**: Zero JavaScript dependencies for maximum deployment simplicity
+- **Documentation Strategy**: Memory Bank approach provides comprehensive context for maintenance
+- **Validation Scripts**: Built-in mock mode validation critical for deployment confidence
+- **Installation Process**: Single package compilation + npm install (no deps) pattern works well
+
+### Future Expansion Readiness
+- **Tool Extension Pattern**: Single execute_command tool provides template for additional MCP tools
+- **Session Scalability**: Architecture supports multiple concurrent sessions efficiently
+- **Transport Evolution**: STDIO foundation enables future HTTP transport addition
+- **Error Taxonomy**: Comprehensive error handling framework supports complex features
+- **Testing Framework**: Validation patterns scale to additional functionality
+
+### User Experience and AI Agent Integration
+- **Command Simplicity**: Single execute_command tool covers 80% of AI agent needs
+- **Error Feedback**: Clear, actionable error messages improve AI agent reliability
+- **Session Persistence**: Persistent sessions enable complex multi-step AI agent workflows
+- **Setup Simplicity**: <5 minute setup time from zero to working MCP server
+- **Documentation Quality**: Complete Memory Bank enables rapid onboarding and troubleshooting
+
+### Production Consolidation Patterns (June 16, 2025)
+- **Single File Architecture**: Consolidate working experimental components into single production file
+- **Repository Cleanup Strategy**: Remove experimental versions after successful consolidation to eliminate confusion
+- **Hybrid Development Approach**: Combine working MCP protocol patterns with proven IRIS integration patterns
+- **Security Research Integration**: Use Perplexity MCP to discover IRIS security requirements (XECUTE privilege validation)
+- **Synchronous IRIS Pattern**: Use synchronous IRIS calls (call_iris_sync) to avoid async timeout issues in MCP context
+- **Hello World Validation**: Always test with simple "Hello World" commands before complex operations
+- **MCP Configuration Management**: Update MCP client configurations to point to consolidated production files
+- **Performance Optimization**: Achieve sub-millisecond response times through proper architecture consolidation
+
+### Technical Debugging Intelligence
+- **MCP Timeout Resolution**: Replace async IRIS calls with synchronous calls when MCP protocol timeouts occur
+- **Security Error Diagnosis**: When XECUTE fails, check `$SYSTEM.Security.Check("%Development","USE")` privilege
+- **Protocol Isolation Testing**: Create debug versions to isolate MCP protocol vs IRIS connectivity issues
+- **Virtual Environment Dependencies**: Always use isolated venv for Python MCP servers with intersystems-irispython
+- **Repository State Management**: Use experimental file naming (debug, minimal, http, standard, hybrid) during development
+- **Consolidation Timing**: Consolidate to production when all components work individually and hybrid testing succeeds
+
+### Architecture Evolution Success Patterns
+- **Iterative Development**: Build working components separately, then combine systematically
+- **Component Validation**: Validate each component (MCP protocol, IRIS connectivity, security) independently
+- **Integration Testing**: Use Hello World commands to validate complete integration pipeline
+- **Error Handling Enhancement**: Add security validation beyond original requirements based on real-world testing
+- **Performance Measurement**: Track execution times (0ms for simple commands) as quality metric
+- **Documentation Synchronization**: Update Memory Bank immediately after successful consolidation
+- **Production Readiness Validation**: Test consolidated version before removing experimental files

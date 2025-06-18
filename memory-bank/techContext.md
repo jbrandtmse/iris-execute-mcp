@@ -158,18 +158,33 @@ class ExecuteCommandResult(BaseModel):
 - Optional: %SYS.Python for future Python embedding
 
 ### Python Development Environment
+**Terminal Environment:**
+- **Windows Shell**: PowerShell (default VS Code terminal)
+- **Command Chaining**: Use semicolon (;) instead of && for PowerShell compatibility
+- **Path Separators**: Use backslash (\) for Windows paths
+- **Activation**: Use `venv\Scripts\activate` for virtual environment
+
 **Setup Commands:**
-```bash
+```powershell
 # Create virtual environment
 python -m venv iris-mcp-env
-source iris-mcp-env/bin/activate  # Linux/macOS
-# iris-mcp-env\Scripts\activate   # Windows
+# Activate on Windows (PowerShell)
+iris-mcp-env\Scripts\activate
 
 # Install dependencies
 pip install intersystems-iris pydantic
 
 # Verify IRIS connectivity
 python -c "import iris; print('IRIS Native API available')"
+```
+
+**PowerShell Command Examples:**
+```powershell
+# Correct PowerShell syntax for command chaining
+cd D:/iris-session-mcp; venv\Scripts\activate; python iris_execute_mcp.py
+
+# Incorrect (Bash syntax) - avoid in PowerShell
+cd D:/iris-session-mcp && venv\Scripts\activate && python iris_execute_mcp.py
 ```
 
 **Configuration Management:**

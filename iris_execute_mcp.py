@@ -113,8 +113,11 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> Sequence[types.Text
             
             logger.info(f"Executing command: {command} in namespace {namespace}")
             
-            # Use the new simplified ExecuteMCP.Core.Command class
-            result = call_iris_sync(
+            # Run synchronous IRIS call in thread pool to prevent async blocking
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None,
+                call_iris_sync,
                 "ExecuteMCP.Core.Command",
                 "ExecuteCommand",
                 command, namespace

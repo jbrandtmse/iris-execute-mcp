@@ -2,16 +2,17 @@
 
 ## 🎉 I/O CAPTURE BREAKTHROUGH: June 18, 2025 - MISSION ACCOMPLISHED! ✅
 
-### IRIS Execute FastMCP Server - ALL 4 TOOLS PERFECT SUCCESS ✅
-**🏆 BREAKTHROUGH ACHIEVEMENT**: I/O Capture mechanism successfully solves timeout issue - ALL tools working perfectly!
+### IRIS Execute FastMCP Server - ALL 5 TOOLS PERFECT SUCCESS ✅
+**🏆 DUAL BREAKTHROUGHS**: I/O Capture + ExecuteClassMethod mechanisms successfully implemented - ALL tools working perfectly!
 
-**Production Server**: `iris_execute_fastmcp.py` - **Production Ready with Perfect I/O Capture!**
+**Production Server**: `iris_execute_fastmcp.py` - **Production Ready with Complete Feature Set!**
 
 **Available Tools - ALL FUNCTIONAL**:
 1. ✅ **`execute_command`** - **BREAKTHROUGH!** I/O capture working with real output + 0ms execution
 2. ✅ **`get_global`** - Dynamic global retrieval (including subscripts)
 3. ✅ **`set_global`** - Dynamic global setting with verification  
 4. ✅ **`get_system_info`** - System connectivity testing
+5. ✅ **`execute_classmethod`** - **NEW!** Dynamic class method execution with output parameters
 
 **Live Cline Test Results (June 18, 2025) - PERFECT SUCCESS**:
 ```json
@@ -91,13 +92,20 @@ If (pCommand [ "WRITE") {
 
 ## What's Working - COMPLETE SUCCESS ✅
 
-### Latest Achievement: I/O Capture Breakthrough ✅
+### Latest Achievements: Dual Breakthroughs ✅
 **I/O Capture Implementation (June 18, 2025):**
 - ✅ **Problem Solved**: Timeout issues completely resolved through I/O capture
 - ✅ **Real Output**: WRITE commands return actual output instead of generic messages
 - ✅ **Performance Excellence**: 0ms execution time maintained with output capture
 - ✅ **MCP Protocol Stability**: Clean communication without STDIO pollution
 - ✅ **Universal Support**: Works for all command types with intelligent detection
+
+**ExecuteClassMethod Implementation (June 18, 2025):**
+- ✅ **Dynamic Invocation**: Call any ObjectScript class method dynamically
+- ✅ **Parameter Support**: Pass any number of parameters with proper handling
+- ✅ **Output Parameters**: Full support for ByRef/Output parameters
+- ✅ **Result Capture**: Method return values captured using global variable scope
+- ✅ **XECUTE Scope Solution**: Global variable approach solves variable scope issues
 
 **Testing Results - Perfect Success:**
 - ✅ **$ZV Command**: Returns actual IRIS version string
@@ -130,8 +138,9 @@ If (pCommand [ "WRITE") {
 
 ### Completed Components - Production Excellence ✅
 **Production Architecture Achievement:**
-- ✅ **Complete Functionality**: All 4 MCP tools working perfectly in production
+- ✅ **Complete Functionality**: All 5 MCP tools working perfectly in production
 - ✅ **I/O Capture Innovation**: Breakthrough solution to output capture challenges
+- ✅ **ExecuteClassMethod Innovation**: Dynamic method invocation with output parameters
 - ✅ **Performance Optimization**: Zero timeout issues with instant execution
 - ✅ **Security Compliance**: Proper IRIS privilege validation throughout
 - ✅ **Clean Architecture**: Intelligent command detection with proper output handling
@@ -140,14 +149,15 @@ If (pCommand [ "WRITE") {
 - ✅ ExecuteMCP.Core.Command class with enhanced I/O capture capability
 - ✅ Smart command detection (WRITE vs non-WRITE handling)
 - ✅ Real output capture using global variable mechanism
-- ✅ Complete API: ExecuteCommand, GetGlobal, SetGlobal, GetSystemInfo
+- ✅ Complete API: ExecuteCommand, GetGlobal, SetGlobal, GetSystemInfo, ExecuteClassMethod
+- ✅ Dynamic class method invocation with parameter and output support
 - ✅ Comprehensive error handling with enhanced debugging capabilities
 - ✅ JSON response format optimized for captured output delivery
 
 **Python MCP Client Development - Production Ready:**
 - ✅ **Production Server**: `iris_execute_fastmcp.py` with all functionality working
 - ✅ **I/O Capture Support**: Enhanced to handle real output from IRIS commands
-- ✅ MCP server implementation with 4 fully functional tools
+- ✅ MCP server implementation with 5 fully functional tools
 - ✅ STDIO transport layer optimized for clean communication
 - ✅ Real IRIS connectivity with perfect Native API integration
 - ✅ Enhanced async/await patterns with zero timeout issues
@@ -209,10 +219,10 @@ Status: Perfect success
 
 **MCP Integration Excellence:**
 - ✅ MCP server instantiation with I/O capture successful
-- ✅ All 4 tools functional with enhanced output capability
+- ✅ All 5 tools functional with enhanced output capability
 - ✅ IRIS connectivity with output capture working perfectly
 - ✅ Zero timeout issues with real output delivery
-- ✅ Python MCP Client validation PASSED (100% success with I/O capture)
+- ✅ Python MCP Client validation PASSED (100% success with I/O capture and ExecuteClassMethod)
 
 ### Breakthrough Achievement - I/O Capture Success ✅
 **Problem Resolution:**

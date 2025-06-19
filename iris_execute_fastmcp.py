@@ -286,6 +286,82 @@ def get_system_info() -> str:
         logger.error(f"System info error: {str(e)}")
         return error_response
 
+@mcp.tool()
+def execute_classmethod(
+    class_name: str, 
+    method_name: str, 
+    parameters: list = None, 
+    namespace: str = "HSCUSTOM"
+) -> str:
+    """
+    Execute an ObjectScript class method dynamically with support for output parameters.
+    
+    Args:
+        class_name: The ObjectScript class name (e.g., "MyPackage.MyClass")
+        method_name: The method name to invoke
+        parameters: Optional list of parameter objects, each with:
+            - value: The parameter value (required)
+            - isOutput: Whether this is an output/ByRef parameter (default: false)
+            - type: Optional type hint for the parameter
+        namespace: Optional IRIS namespace (default: HSCUSTOM)
+    
+    Returns:
+        JSON string with method result, output parameters, and any captured output
+    """
+    logger.info(f"Executing class method {class_name}.{method_name} in {namespace}")
+    
+    try:
+        # Default to empty list if no parameters provided
+        if parameters is None:
+            parameters = []
+            
+        # Convert parameters list to JSON string for IRIS
+        parameters_json = json.dumps(parameters)
+        
+        # Call IRIS backend with timeout
+        result = call_iris_with_timeout(
+            "ExecuteMCP.Core.Command", 
+            "ExecuteClassMethod", 
+            30.0,  # 30 second timeout for class methods
+            class_name, 
+            method_name, 
+            parameters_json, 
+            namespace
+        )
+        
+        # Parse result to ensure it's valid JSON
+        parsed_result = json.loads(result)
+        
+        # Log success
+        if parsed_result.get("status") == "success":
+            logger.info(f"Class method executed successfully: {class_name}.{method_name}")
+        else:
+            logger.warning(f"Class method execution issues: {parsed_result.get('errorMessage', 'Unknown error')}")
+            
+        return result
+        
+    except json.JSONDecodeError as e:
+        error_response = json.dumps({
+            "status": "error", 
+            "error": f"Invalid JSON response from IRIS: {str(e)}",
+            "className": class_name,
+            "methodName": method_name,
+            "namespace": namespace
+        })
+        logger.error(f"JSON decode error: {str(e)}")
+        return error_response
+        
+    except Exception as e:
+        error_response = json.dumps({
+            "status": "error",
+            "error": f"Unexpected error: {str(e)}",
+            "className": class_name,
+            "methodName": method_name,
+            "namespace": namespace
+        })
+        logger.error(f"Unexpected error: {str(e)}")
+        return error_response
+
 if __name__ == "__main__":
     logger.info("Starting IRIS Execute FastMCP Server")
     logger.info(f"IRIS Available: {IRIS_AVAILABLE}")

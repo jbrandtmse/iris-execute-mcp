@@ -118,8 +118,12 @@ def execute_command(command: str, namespace: str = "HSCUSTOM") -> str:
     """
     Execute an ObjectScript command directly in IRIS.
     
+    NOTE: For executing ObjectScript class methods (e.g., ##class(MyClass).MyMethod()),
+    use the execute_classmethod tool instead, which provides better parameter handling,
+    return value capture, and output parameter support.
+    
     Args:
-        command: The ObjectScript command to execute
+        command: The ObjectScript command to execute (WRITE, SET, KILL, etc.)
         namespace: Optional IRIS namespace (default: HSCUSTOM)
     
     Returns:

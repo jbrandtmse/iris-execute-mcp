@@ -1,6 +1,6 @@
 # IRIS System Files
 /src/
-!/src/ExecuteMCP/
+!/src/ExecuteMCP/*
 
 # Python
 __pycache__/

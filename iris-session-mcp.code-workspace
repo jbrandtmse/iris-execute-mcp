@@ -30,7 +30,16 @@
             "username": "_SYSTEM",
 			"password": "_SYSTEM"
         	}
-		}
+		},
+		"files.exclude": {
+			"**/.git": true,
+			"**/.svn": true,
+			"**/.hg": true,
+			"**/.DS_Store": true,
+			"**/Thumbs.db": true,
+			"src/%*": false
+		},
+		"explorerExclude.backup": {}
 		
 	},
 }

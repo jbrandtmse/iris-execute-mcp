@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name="iris-execute-mcp",
-    version="2.0.0",
-    description="IRIS Execute MCP Server - Execute ObjectScript commands via FastMCP protocol with I/O capture",
+    version="2.1.0",
+    description="IRIS Execute MCP Server - Execute ObjectScript commands and unit tests via FastMCP protocol with I/O capture and async job management",
     author="IRIS Execute MCP Team",
     python_requires=">=3.8",
     packages=find_packages(),
@@ -14,7 +14,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "iris-execute-mcp=iris_execute_fastmcp:main",
+            "iris-execute-mcp=iris_execute_mcp:main",
         ],
     },
     classifiers=[

@@ -18,55 +18,35 @@ Parameter MAXOUTPUTSIZE = 65536;
 /// <p>Returns JSON with execution results and timing information.</p>
 ClassMethod ExecuteCommand(pCommand As %String, pNamespace As %String = "HSCUSTOM") As %String
 {
-    // Initialize debug logging
-    Set ^MCPDebug = ""
-    Set ^MCPDebug = ^MCPDebug_"START: ExecuteCommand method entered;"
-    
     Set tSC = $$$OK
     Set tResult = {}
     Set tOriginalNamespace = $NAMESPACE
     
-    Set ^MCPDebug = ^MCPDebug_"INIT: Variables initialized, original namespace="_tOriginalNamespace_";"
-    
     Try {
-        Set ^MCPDebug = ^MCPDebug_"TRY: Entered try block;"
-        
         // Switch namespace if needed
         If (pNamespace '= $NAMESPACE) {
-            Set ^MCPDebug = ^MCPDebug_"NAMESPACE: Switching from "_$NAMESPACE_" to "_pNamespace_";"
             Set $NAMESPACE = pNamespace
-            Set ^MCPDebug = ^MCPDebug_"NAMESPACE: Switch completed, now in "_$NAMESPACE_";"
-        } Else {
-            Set ^MCPDebug = ^MCPDebug_"NAMESPACE: No switch needed, staying in "_$NAMESPACE_";"
         }
         
         // Check security permissions before execution
-        Set ^MCPDebug = ^MCPDebug_"SECURITY: About to check %Development:USE privilege;"
         If '$SYSTEM.Security.Check("%Development","USE") {
-            Set ^MCPDebug = ^MCPDebug_"SECURITY: FAILED - Insufficient privileges;"
             Set tResult.status = "error"
             Set tResult.errorMessage = "Insufficient privileges for command execution (requires %Development:USE)"
             Quit
         }
-        Set ^MCPDebug = ^MCPDebug_"SECURITY: PASSED - Privilege check successful;"
         
         // Execute command with timing and output capture
-        Set ^MCPDebug = ^MCPDebug_"TIMING: About to set start time;"
         Set tStartTime = $HOROLOG
-        Set ^MCPDebug = ^MCPDebug_"TIMING: Start time set to "_tStartTime_";"
         
         // Capture output using I/O redirection to avoid STDIO pollution
-        Set ^MCPDebug = ^MCPDebug_"IO: Saving current I/O device;"
         Set tOriginalIO = $IO
         Set tCapturedOutput = ""
         
         Try {
             // Create temporary capture device using a global for output capture
             Set ^MCPCapture = ""
-            Set ^MCPDebug = ^MCPDebug_"IO: Creating capture mechanism;"
             
             // Use a more reliable approach - capture via global variable
-            Set ^MCPDebug = ^MCPDebug_"EXECUTE: About to XECUTE with output capture: "_pCommand_";"
             
             // For WRITE commands, we need to capture the output differently
             // Use $DEVICE to capture output to a global
@@ -75,22 +55,16 @@ ClassMethod ExecuteCommand(pCommand As %String, pNamespace As %String = "HSCUSTO
                 // For WRITE commands, modify to append to our capture global
                 Set tModifiedCommand = $PIECE(pCommand,"WRITE",2)
                 Set tCaptureCommand = "Set ^MCPCapture = ^MCPCapture_("_tModifiedCommand_")"
-                Set ^MCPDebug = ^MCPDebug_"EXECUTE: Modified WRITE command for capture;"
                 XECUTE tCaptureCommand
             } Else {
                 // For non-WRITE commands, execute normally
-                Set ^MCPDebug = ^MCPDebug_"EXECUTE: Executing non-WRITE command;"
                 XECUTE pCommand
             }
             
-            Set ^MCPDebug = ^MCPDebug_"EXECUTE: Command execution completed;"
-            
             // Get captured output
             Set tCapturedOutput = $GET(^MCPCapture,"")
-            Set ^MCPDebug = ^MCPDebug_"EXECUTE: Captured output length: "_$LENGTH(tCapturedOutput)_";"
             
         } Catch (captureEx) {
-            Set ^MCPDebug = ^MCPDebug_"IO: Capture failed, falling back to direct execution;"
             XECUTE pCommand
             Set tCapturedOutput = ""
         }
@@ -101,46 +75,32 @@ ClassMethod ExecuteCommand(pCommand As %String, pNamespace As %String = "HSCUSTO
         // Set output based on what was captured
         If (tCapturedOutput '= "") {
             Set tOutput = tCapturedOutput
-            Set ^MCPDebug = ^MCPDebug_"EXECUTE: Using captured output;"
         } Else {
             Set tOutput = "Command executed successfully"
-            Set ^MCPDebug = ^MCPDebug_"EXECUTE: Using default success message;"
         }
         
-        Set ^MCPDebug = ^MCPDebug_"TIMING: About to calculate execution time;"
         Set tEndTime = $HOROLOG
         Set tExecutionTime = $PIECE(tEndTime,",",2) - $PIECE(tStartTime,",",2)
-        Set ^MCPDebug = ^MCPDebug_"TIMING: End time="_tEndTime_", execution time="_tExecutionTime_"ms;"
         
         // Build success response
-        Set ^MCPDebug = ^MCPDebug_"RESPONSE: Building success response;"
         Set tResult.status = "success"
         Set tResult.output = tOutput
         Set tResult.namespace = pNamespace
         Set tResult.executionTimeMs = (tExecutionTime * 1000)
         Set tResult.mode = "direct"
         Set tResult.timestamp = $ZDateTime($HOROLOG, 3)
-        Set ^MCPDebug = ^MCPDebug_"RESPONSE: Success response built;"
         
     } Catch (ex) {
-        Set ^MCPDebug = ^MCPDebug_"ERROR: Exception caught: "_ex.DisplayString()_";"
         Set tResult.status = "error"
         Set tResult.errorMessage = ex.DisplayString()
         Set tResult.namespace = pNamespace
         Set tResult.timestamp = $ZDateTime($HOROLOG, 3)
-        Set ^MCPDebug = ^MCPDebug_"ERROR: Error response built;"
     }
     
     // Always restore original namespace
-    Set ^MCPDebug = ^MCPDebug_"CLEANUP: About to restore original namespace;"
     Set $NAMESPACE = tOriginalNamespace
-    Set ^MCPDebug = ^MCPDebug_"CLEANUP: Namespace restored to "_tOriginalNamespace_";"
     
-    Set ^MCPDebug = ^MCPDebug_"JSON: About to convert result to JSON;"
     Set tJSON = tResult.%ToJSON()
-    Set ^MCPDebug = ^MCPDebug_"JSON: Conversion completed;"
-    
-    Set ^MCPDebug = ^MCPDebug_"END: ExecuteCommand method completed successfully;"
     
     Quit tJSON
 }

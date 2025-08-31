@@ -95,7 +95,7 @@ def test_mcp_server():
     print("MCP SERVER TEST")
     print("=" * 50)
     
-    script_path = Path("C:/iris-execute-mcp/iris_execute_fastmcp.py")
+    script_path = Path("C:/iris-execute-mcp/iris_execute_mcp.py")
     venv_python = Path("C:/iris-execute-mcp/venv/Scripts/python.exe")
     
     if not script_path.exists():

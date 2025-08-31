@@ -2,5 +2,4 @@
 /.docker/*
 /.vscode/*
 /healtshare.code-workspace
-/readme.md
 /mcp-ragdocs/*

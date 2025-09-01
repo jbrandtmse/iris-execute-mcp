@@ -1,6 +1,9 @@
 # IRIS System Files
-/src/
-!/src/ExecuteMCP/*
+# Track ExecuteMCP source code classes - only ignore generated/temporary IRIS files
+*.int
+*.obj
+*.mac.bak
+*.cls.backup
 
 # Python
 __pycache__/

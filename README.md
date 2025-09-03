@@ -17,15 +17,17 @@ The IRIS Execute MCP server provides **15 fully functional tools** for comprehen
 - ✅ **compile_objectscript_class**: Compile one or more ObjectScript classes with error reporting
 - ✅ **compile_objectscript_package**: Compile all classes in a package recursively
 
-### Unit Testing Tools (8):
-- ✅ **list_unit_tests**: Lists all available unit tests from specified path
-- ✅ **run_unit_tests**: Executes unit tests with traditional %UnitTest.Manager
-- ✅ **get_unit_test_results**: Retrieves test results by result ID
-- ✅ **queue_unit_tests**: Async test execution with immediate job ID return (no timeout)
-- ✅ **poll_unit_tests**: Non-blocking poll for async test results
-- ✅ **get_job_status**: Check job status without retrieving results
-- ✅ **cancel_job**: Cancel running async jobs
-- ✅ **list_active_jobs**: Monitor all active async jobs
+### Unit Testing Tools (8) - **[EXPERIMENTAL]**:
+> ⚠️ **Note**: Unit testing tools are experimental and may undergo changes in future releases.
+
+- ✅ **list_unit_tests**: Lists all available unit tests from specified path [EXPERIMENTAL]
+- ✅ **run_unit_tests**: Executes unit tests with traditional %UnitTest.Manager [EXPERIMENTAL]
+- ✅ **get_unit_test_results**: Retrieves test results by result ID [EXPERIMENTAL]
+- ✅ **queue_unit_tests**: Async test execution with immediate job ID return (no timeout) [EXPERIMENTAL]
+- ✅ **poll_unit_tests**: Non-blocking poll for async test results [EXPERIMENTAL]
+- ✅ **get_job_status**: Check job status without retrieving results [EXPERIMENTAL]
+- ✅ **cancel_job**: Cancel running async jobs [EXPERIMENTAL]
+- ✅ **list_active_jobs**: Monitor all active async jobs [EXPERIMENTAL]
 
 ## Installation
 
@@ -250,7 +252,9 @@ Compile all classes in a package recursively:
 → Basic compile without recursion
 ```
 
-### Unit Testing Tools
+### Unit Testing Tools [EXPERIMENTAL]
+
+> ⚠️ **Important**: Unit testing tools are currently experimental. While functional, they may undergo interface changes or improvements in future releases. Use with caution in production environments.
 
 #### Synchronous Testing
 Traditional unit test execution with %UnitTest.Manager:
@@ -330,10 +334,13 @@ If you see "MCP error -32000: Connection closed":
 - Verify virtual environment activation
 - Check Python path points to venv Python
 
-### Unit Test Issues
+### Unit Test Issues [EXPERIMENTAL]
+> **Note**: Unit testing features are experimental and may require additional configuration.
+
 - Ensure test classes extend %UnitTest.TestCase
 - Verify test path exists and is accessible
 - Check async job globals: ^UnitTestAsync.Job
+- Consider that experimental features may have undocumented limitations
 
 ## Advanced Usage
 

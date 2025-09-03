@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "local:HSCUSTOM",
+			"uri": "isfs://local:hscustom/"
+		}
+	],
+	"settings": {}
+}

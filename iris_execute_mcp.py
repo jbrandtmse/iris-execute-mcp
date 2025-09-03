@@ -762,6 +762,143 @@ def list_active_jobs() -> str:
         logger.error(f"Unexpected error: {str(e)}")
         return error_response
 
+# =====================================================================================
+# OBJECTSCRIPT COMPILATION TOOLS
+# =====================================================================================
+
+@mcp.tool()
+def compile_objectscript_class(class_names: str, qspec: str = "bckry", namespace: str = "HSCUSTOM") -> str:
+    """
+    Compile one or more ObjectScript classes in IRIS.
+    
+    IMPORTANT: Class names MUST include the .cls suffix for proper compilation.
+    
+    Args:
+        class_names: Class name(s) to compile with .cls suffix required
+                    (e.g., "MyClass.cls" or "Class1.cls,Class2.cls")
+        qspec: Compilation flags (default: "bckry")
+               b = Rebuild dependencies
+               c = Compile
+               k = Keep generated source
+               r = Recursive compile
+               y = Display compilation information
+        namespace: Target namespace (default: HSCUSTOM)
+    
+    Returns:
+        JSON string with compilation results including any errors
+    """
+    logger.info(f"Compiling classes: {class_names} with qspec: {qspec} in namespace: {namespace}")
+    
+    try:
+        # Call IRIS backend with timeout for compilation
+        result = call_iris_with_timeout(
+            "ExecuteMCP.Core.Compile",
+            "CompileClasses",
+            60.0,  # 60 second timeout for compilation
+            class_names,
+            qspec,
+            namespace
+        )
+        
+        # Parse result to ensure it's valid JSON
+        parsed_result = json.loads(result)
+        
+        # Log compilation status
+        status = parsed_result.get("status", "unknown")
+        if status == "success":
+            logger.info(f"Classes compiled successfully: {parsed_result.get('compiledCount', 0)} compiled")
+        elif status == "partial":
+            logger.warning(f"Partial compilation: {parsed_result.get('compiledCount', 0)} compiled, {parsed_result.get('errorCount', 0)} failed")
+        elif status == "error":
+            logger.error(f"Compilation failed: {parsed_result.get('errorCount', 0)} errors")
+        
+        return result
+        
+    except json.JSONDecodeError as e:
+        error_response = json.dumps({
+            "status": "error",
+            "error": f"Invalid JSON response from IRIS: {str(e)}",
+            "classNames": class_names,
+            "namespace": namespace
+        })
+        logger.error(f"JSON decode error: {str(e)}")
+        return error_response
+        
+    except Exception as e:
+        error_response = json.dumps({
+            "status": "error",
+            "error": f"Unexpected error: {str(e)}",
+            "classNames": class_names,
+            "namespace": namespace
+        })
+        logger.error(f"Unexpected error: {str(e)}")
+        return error_response
+
+@mcp.tool()
+def compile_objectscript_package(package_name: str, qspec: str = "bckry", namespace: str = "HSCUSTOM") -> str:
+    """
+    Compile all classes in an ObjectScript package.
+    
+    Args:
+        package_name: Package name (e.g., "ExecuteMCP.Core")
+        qspec: Compilation flags (default: "bckry")
+               b = Rebuild dependencies
+               c = Compile
+               k = Keep generated source
+               r = Recursive compile
+               y = Display compilation information
+        namespace: Target namespace (default: HSCUSTOM)
+    
+    Returns:
+        JSON string with compilation results including any errors
+    """
+    logger.info(f"Compiling package: {package_name} with qspec: {qspec} in namespace: {namespace}")
+    
+    try:
+        # Call IRIS backend with longer timeout for package compilation
+        result = call_iris_with_timeout(
+            "ExecuteMCP.Core.Compile",
+            "CompilePackage",
+            120.0,  # 2 minute timeout for package compilation
+            package_name,
+            qspec,
+            namespace
+        )
+        
+        # Parse result to ensure it's valid JSON
+        parsed_result = json.loads(result)
+        
+        # Log compilation status
+        status = parsed_result.get("status", "unknown")
+        if status == "success":
+            logger.info(f"Package compiled successfully: {parsed_result.get('compiledCount', 0)} classes compiled")
+        elif status == "partial":
+            logger.warning(f"Partial package compilation: {parsed_result.get('compiledCount', 0)} compiled, {parsed_result.get('errorCount', 0)} failed")
+        elif status == "error":
+            logger.error(f"Package compilation failed: {parsed_result.get('errorCount', 0)} errors")
+        
+        return result
+        
+    except json.JSONDecodeError as e:
+        error_response = json.dumps({
+            "status": "error",
+            "error": f"Invalid JSON response from IRIS: {str(e)}",
+            "packageName": package_name,
+            "namespace": namespace
+        })
+        logger.error(f"JSON decode error: {str(e)}")
+        return error_response
+        
+    except Exception as e:
+        error_response = json.dumps({
+            "status": "error",
+            "error": f"Unexpected error: {str(e)}",
+            "packageName": package_name,
+            "namespace": namespace
+        })
+        logger.error(f"Unexpected error: {str(e)}")
+        return error_response
+
 if __name__ == "__main__":
     logger.info("Starting IRIS Execute FastMCP Server")
     logger.info(f"IRIS Available: {IRIS_AVAILABLE}")

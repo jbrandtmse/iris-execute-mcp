@@ -1,8 +1,8 @@
 # IRIS Execute MCP Server
 
-## Complete MCP Integration for InterSystems IRIS - 13 Tools Production Ready! 🎉
+## Complete MCP Integration for InterSystems IRIS - 15 Tools Production Ready! 🎉
 
-The IRIS Execute MCP server provides **13 fully functional tools** for comprehensive IRIS integration, including basic operations and advanced unit testing capabilities with async job management.
+The IRIS Execute MCP server provides **15 fully functional tools** for comprehensive IRIS integration, including basic operations, compilation tools, and advanced unit testing capabilities with async job management.
 
 ## Current Tool Status ✅
 
@@ -12,6 +12,10 @@ The IRIS Execute MCP server provides **13 fully functional tools** for comprehen
 - ✅ **get_global**: Dynamic global retrieval with complex subscripts
 - ✅ **set_global**: Dynamic global setting with verification  
 - ✅ **get_system_info**: Real-time IRIS system information
+
+### Compilation Tools (2):
+- ✅ **compile_objectscript_class**: Compile one or more ObjectScript classes with error reporting
+- ✅ **compile_objectscript_package**: Compile all classes in a package recursively
 
 ### Unit Testing Tools (8):
 - ✅ **list_unit_tests**: Lists all available unit tests from specified path
@@ -76,7 +80,7 @@ Do $System.OBJ.CompilePackage("ExecuteMCP")
 4. Find "Cline > MCP: Servers"
 5. Click "Edit in settings.json"
 
-### Step 2: Production Configuration (All 13 Tools)
+### Step 2: Production Configuration (All 15 Tools)
 
 Add this to your Cline MCP settings:
 
@@ -89,6 +93,8 @@ Add this to your Cline MCP settings:
       "get_global",
       "set_global",
       "get_system_info",
+      "compile_objectscript_class",
+      "compile_objectscript_package",
       "list_unit_tests",
       "run_unit_tests",
       "get_unit_test_results",
@@ -117,10 +123,10 @@ Add this to your Cline MCP settings:
 ### Key Configuration Details:
 ✅ **Server Name**: `iris-execute-mcp`  
 ✅ **Script Name**: `iris_execute_mcp.py` (consolidated server with all features)  
-✅ **13 Tools**: 5 basic + 8 unit testing tools  
+✅ **15 Tools**: 5 basic + 2 compilation + 8 unit testing tools  
 ✅ **Virtual Environment**: Uses isolated dependencies for reliability  
 ✅ **Environment Variables**: Proper IRIS connection configuration  
-✅ **Auto-Approve**: All 13 tools approved for seamless AI workflows  
+✅ **Auto-Approve**: All 15 tools approved for seamless AI workflows
 
 ### Step 3: Restart and Test
 1. Save the settings.json file
@@ -208,6 +214,42 @@ Retrieve IRIS system information:
 → Returns version, namespace, timestamp
 ```
 
+### Compilation Tools
+
+#### compile_objectscript_class
+Compile one or more ObjectScript classes with comprehensive error reporting.
+
+**IMPORTANT**: Class names MUST include the .cls suffix for proper compilation.
+
+```python
+# Compile single class (note the .cls suffix)
+"Compile ObjectScript class MyPackage.MyClass.cls"
+→ Returns compilation status and any errors
+
+# Compile multiple classes (all with .cls suffix)
+"Compile classes MyPackage.Class1.cls, MyPackage.Class2.cls"
+→ Returns status for each class
+
+# Custom compilation flags
+"Compile MyPackage.MyClass.cls with flags 'bckry'"
+→ b=rebuild, c=compile, k=keep source, r=recursive, y=display info
+
+# Note: If .cls suffix is omitted, it will be automatically added
+"Compile MyPackage.MyClass" → Internally becomes "MyPackage.MyClass.cls"
+```
+
+#### compile_objectscript_package
+Compile all classes in a package recursively:
+```python
+# Compile entire package
+"Compile ObjectScript package MyPackage"
+→ Compiles all classes in package and sub-packages
+
+# With custom flags
+"Compile package MyPackage with flags 'bc'"
+→ Basic compile without recursion
+```
+
 ### Unit Testing Tools
 
 #### Synchronous Testing
@@ -246,9 +288,10 @@ Advanced async job queue for timeout-free testing:
 
 ### Technology Stack
 - **Python MCP Server**: FastMCP framework with STDIO transport
-- **IRIS Backend**: ExecuteMCP.Core.Command and ExecuteMCP.Core.UnitTest classes
+- **IRIS Backend**: ExecuteMCP.Core.Command, ExecuteMCP.Core.Compile, and ExecuteMCP.Core.UnitTest classes
 - **Async Job Management**: ExecuteMCP.Core.UnitTestAsync for timeout-free testing
 - **I/O Capture**: Global variable mechanism avoiding STDIO conflicts
+- **Compilation Engine**: $System.OBJ methods with comprehensive error handling
 
 ### Key Innovations
 1. **I/O Capture Breakthrough**: Real output from WRITE commands via ^MCPCapture
@@ -328,6 +371,7 @@ Contributions welcome! Please ensure:
 MIT License - See LICENSE file for details
 
 ## Version History
+- **v2.2.0** (September 3, 2025): Added 2 compilation tools (15 total)
 - **v2.1.0** (August 30, 2025): Consolidated server with 13 tools
 - **v2.0.0**: Added unit testing capabilities
 - **v1.0.0**: Initial 5 basic tools
@@ -338,5 +382,5 @@ MIT License - See LICENSE file for details
 - Memory Bank: See `/memory-bank` for project context
 
 ---
-**Status**: ✅ **Production Ready** - All 13 tools operational  
-**Last Updated**: August 30, 2025
+**Status**: ✅ **Production Ready** - All 15 tools operational  
+**Last Updated**: September 3, 2025

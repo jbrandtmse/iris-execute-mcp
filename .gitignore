@@ -5,6 +5,12 @@
 *.mac.bak
 *.cls.backup
 
+# Exclude IRIS system libraries (accidentally added)
+src/%Api/
+src/%Atelier/
+src/%UnitTest/
+vscode-objectscript-master/
+
 # Python
 __pycache__/
 *.py[cod]

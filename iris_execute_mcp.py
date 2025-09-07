@@ -366,183 +366,46 @@ def execute_classmethod(
         logger.error(f"Unexpected error: {str(e)}")
         return error_response
 
-@mcp.tool()
-def list_unit_tests(test_root_path: str) -> str:
-    """
-    Lists all available unit tests found at the specified root path.
-    
-    Args:
-        test_root_path: The root directory path containing unit test suites
-    
-    Returns:
-        JSON string with discovered test suites, classes, and methods
-    """
-    logger.info(f"Listing unit tests from root path: {test_root_path}")
-    
-    try:
-        # Call IRIS backend
-        result = call_iris_sync("ExecuteMCP.Core.UnitTest", "ListTests", test_root_path)
-        
-        # Parse result to ensure it's valid JSON
-        parsed_result = json.loads(result)
-        
-        # Log success
-        if parsed_result.get("status") == "success":
-            logger.info("Unit tests listed successfully")
-        else:
-            logger.warning(f"Unit test listing issues: {parsed_result.get('error', 'Unknown error')}")
-            
-        return result
-        
-    except json.JSONDecodeError as e:
-        error_response = json.dumps({
-            "status": "error", 
-            "error": f"Invalid JSON response from IRIS: {str(e)}",
-            "testRootPath": test_root_path
-        })
-        logger.error(f"JSON decode error: {str(e)}")
-        return error_response
-        
-    except Exception as e:
-        error_response = json.dumps({
-            "status": "error",
-            "error": f"Unexpected error: {str(e)}",
-            "testRootPath": test_root_path
-        })
-        logger.error(f"Unexpected error: {str(e)}")
-        return error_response
-
-@mcp.tool()
-def run_unit_tests(test_spec: str, qualifiers: str = "/recursive", test_root_path: str = "") -> str:
-    """
-    Runs unit tests based on the specified test specification.
-    
-    Args:
-        test_spec: Test specification (e.g., "MySuite:MyClass:MyMethod")
-        qualifiers: Test run qualifiers (e.g., "/recursive/nodelete")
-        test_root_path: The root directory path containing unit test suites
-    
-    Returns:
-        JSON string with test execution results and result ID
-    """
-    logger.info(f"Running unit tests: {test_spec} with qualifiers: {qualifiers}")
-    
-    try:
-        # Call IRIS backend with timeout for potentially long-running tests
-        result = call_iris_with_timeout(
-            "ExecuteMCP.Core.UnitTest", 
-            "RunTests", 
-            120.0,  # 2 minute timeout for test execution
-            test_spec, 
-            qualifiers, 
-            test_root_path
-        )
-        
-        # Parse result to ensure it's valid JSON
-        parsed_result = json.loads(result)
-        
-        # Log success
-        if parsed_result.get("status") == "success":
-            logger.info("Unit tests executed successfully")
-        else:
-            logger.warning(f"Unit test execution issues: {parsed_result.get('error', 'Unknown error')}")
-            
-        return result
-        
-    except json.JSONDecodeError as e:
-        error_response = json.dumps({
-            "status": "error", 
-            "error": f"Invalid JSON response from IRIS: {str(e)}",
-            "testSpec": test_spec,
-            "qualifiers": qualifiers
-        })
-        logger.error(f"JSON decode error: {str(e)}")
-        return error_response
-        
-    except Exception as e:
-        error_response = json.dumps({
-            "status": "error",
-            "error": f"Unexpected error: {str(e)}",
-            "testSpec": test_spec,
-            "qualifiers": qualifiers
-        })
-        logger.error(f"Unexpected error: {str(e)}")
-        return error_response
-
-@mcp.tool()
-def get_unit_test_results(result_id: int) -> str:
-    """
-    Fetches the results for a given test run ID.
-    
-    Args:
-        result_id: The ID of the test run to retrieve results for
-    
-    Returns:
-        JSON string with test results including failures and errors
-    """
-    logger.info(f"Getting unit test results for ID: {result_id}")
-    
-    try:
-        # Call IRIS backend
-        result = call_iris_sync("ExecuteMCP.Core.UnitTest", "GetTestResult", result_id)
-        
-        # Parse result to ensure it's valid JSON
-        parsed_result = json.loads(result)
-        
-        # Log success
-        if parsed_result.get("status") == "success":
-            logger.info(f"Unit test results retrieved successfully for ID: {result_id}")
-        else:
-            logger.warning(f"Unit test result retrieval issues: {parsed_result.get('error', 'Unknown error')}")
-            
-        return result
-        
-    except json.JSONDecodeError as e:
-        error_response = json.dumps({
-            "status": "error", 
-            "error": f"Invalid JSON response from IRIS: {str(e)}",
-            "resultId": result_id
-        })
-        logger.error(f"JSON decode error: {str(e)}")
-        return error_response
-        
-    except Exception as e:
-        error_response = json.dumps({
-            "status": "error",
-            "error": f"Unexpected error: {str(e)}",
-            "resultId": result_id
-        })
-        logger.error(f"Unexpected error: {str(e)}")
-        return error_response
 
 # =====================================================================================
-# ASYNC UNIT TESTING TOOLS - REVOLUTIONARY TIMEOUT-FREE IMPLEMENTATION
+# ASYNC UNIT TESTING TOOLS - WORKMANAGER-BASED IMPLEMENTATION
 # =====================================================================================
 
 @mcp.tool()
-def queue_unit_tests(test_spec: str, qualifiers: str = "/recursive", test_root_path: str = "", namespace: str = "HSCUSTOM") -> str:
+def queue_unit_tests(test_spec: str, qualifiers: str = None, test_root_path: str = "", namespace: str = "HSCUSTOM") -> str:
     """
-    Queue unit test execution using async pattern that returns immediately without blocking.
+    Queue unit test execution using WorkMgr async pattern for process isolation.
     
-    This tool uses an async work queue pattern to eliminate MCP timeouts by queueing test 
-    execution in the background and returning a job ID immediately. Tests execute using 
-    direct TestCase method calls, bypassing the heavyweight %UnitTest.Manager overhead.
+    This tool uses %SYSTEM.WorkMgr to execute tests in an isolated worker process,
+    avoiding %UnitTest.Manager singleton conflicts. Tests run with full assertion
+    macro support and return immediately with a job ID for polling.
     
     Args:
-        test_spec: Test specification (e.g., "ExecuteMCP.Test.SampleUnitTest" for all methods, 
-                  "ExecuteMCP.Test.SampleUnitTest:TestMethodName" for specific method)
-        qualifiers: Test run qualifiers (default: "/recursive")
-        test_root_path: The root directory path containing unit test suites (default: "")
+        test_spec: Test specification (e.g., "ExecuteMCP.Test.SampleUnitTest")
+                   Can also target specific methods: "ExecuteMCP.Test.SampleUnitTest:TestAddition"
+        qualifiers: Optional test run qualifiers. If not provided, defaults to:
+                   "/noload/nodelete/recursive" for VS Code workflow.
+                   Common qualifiers:
+                   - /noload: Don't load classes from filesystem (VS Code auto-syncs)
+                   - /nodelete: Don't delete test classes after run
+                   - /recursive: Run all test methods in the class/package
+                   - /debug: Enable debug output
+                   - /verbose: Verbose output
+        test_root_path: Optional test root directory (default: uses ^UnitTestRoot)
         namespace: Optional IRIS namespace (default: HSCUSTOM)
     
     Returns:
-        JSON string with jobID and queue status. Use poll_unit_tests with the jobID to retrieve results.
+        JSON string with jobID and queue status. Use poll_unit_tests to retrieve results.
     """
-    logger.info(f"Queueing async unit tests: {test_spec} in namespace {namespace}")
+    logger.info(f"Queueing unit tests with WorkMgr: {test_spec} in namespace {namespace}")
+    
+    # Pass empty string if None to let IRIS handle defaults
+    if qualifiers is None:
+        qualifiers = ""
     
     try:
-        # Call IRIS backend using async pattern
-        result = call_iris_sync("ExecuteMCP.Core.UnitTestAsync", "QueueTest", test_spec, qualifiers, test_root_path, namespace)
+        # Call IRIS backend using new WorkMgr pattern (namespace used for connection, not as parameter)
+        result = call_iris_sync("ExecuteMCP.Core.UnitTestQueue", "QueueTestExecution", test_spec, qualifiers, test_root_path)
         
         # Parse result to ensure it's valid JSON
         parsed_result = json.loads(result)
@@ -576,25 +439,25 @@ def queue_unit_tests(test_spec: str, qualifiers: str = "/recursive", test_root_p
         return error_response
 
 @mcp.tool()
-def poll_unit_tests(job_id: str) -> str:
+def poll_unit_tests(job_id: str, namespace: str = "HSCUSTOM") -> str:
     """
-    Poll for async unit test execution results in a non-blocking manner.
+    Poll for unit test results from WorkMgr execution.
     
-    This tool checks for completion of queued unit tests without blocking the MCP 
-    communication channel. Returns either the complete test results or current status.
+    Checks the status of tests executing in an isolated worker process.
+    Returns current status if running, or complete results if finished.
     
     Args:
         job_id: Job ID returned from queue_unit_tests
+        namespace: Optional IRIS namespace (default: HSCUSTOM)
     
     Returns:
-        JSON string with complete test results if finished, or running status if still executing.
-        Results include summary statistics and individual method results with pass/fail status.
+        JSON string with test status or complete results including pass/fail counts.
     """
-    logger.info(f"Polling async unit tests: Job ID {job_id}")
+    logger.info(f"Polling unit test results: Job ID {job_id}")
     
     try:
-        # Call IRIS backend
-        result = call_iris_sync("ExecuteMCP.Core.UnitTestAsync", "PollTest", job_id)
+        # Call IRIS backend (namespace used for connection, not as parameter)
+        result = call_iris_sync("ExecuteMCP.Core.UnitTestQueue", "PollResults", job_id)
         
         # Parse result to ensure it's valid JSON
         parsed_result = json.loads(result)
@@ -630,137 +493,6 @@ def poll_unit_tests(job_id: str) -> str:
         logger.error(f"Unexpected error: {str(e)}")
         return error_response
 
-@mcp.tool()
-def get_job_status(job_id: str) -> str:
-    """
-    Get job status without returning results (for progress monitoring)
-    
-    Args:
-        job_id: Job ID to check
-    
-    Returns:
-        JSON string with job status (queued, running, completed, failed, cancelled)
-    """
-    logger.info(f"Getting job status for: {job_id}")
-    
-    try:
-        # Call IRIS backend
-        result = call_iris_sync("ExecuteMCP.Core.UnitTestAsync", "GetJobStatus", job_id)
-        
-        # Parse result to ensure it's valid JSON
-        parsed_result = json.loads(result)
-        
-        # Log status
-        status = parsed_result.get("status", "unknown")
-        logger.info(f"Job {job_id} status: {status}")
-            
-        return result
-        
-    except json.JSONDecodeError as e:
-        error_response = json.dumps({
-            "status": "error", 
-            "error": f"Invalid JSON response from IRIS: {str(e)}",
-            "jobId": job_id
-        })
-        logger.error(f"JSON decode error: {str(e)}")
-        return error_response
-        
-    except Exception as e:
-        error_response = json.dumps({
-            "status": "error",
-            "error": f"Unexpected error: {str(e)}",
-            "jobId": job_id
-        })
-        logger.error(f"Unexpected error: {str(e)}")
-        return error_response
-
-@mcp.tool()
-def cancel_job(job_id: str) -> str:
-    """
-    Cancel a running async job (cleanup)
-    
-    Args:
-        job_id: Job ID to cancel
-    
-    Returns:
-        JSON string with cancellation status
-    """
-    logger.info(f"Cancelling job: {job_id}")
-    
-    try:
-        # Call IRIS backend
-        result = call_iris_sync("ExecuteMCP.Core.UnitTestAsync", "CancelJob", job_id)
-        
-        # Parse result to ensure it's valid JSON
-        parsed_result = json.loads(result)
-        
-        # Log cancellation
-        if parsed_result.get("status") == "cancelled":
-            logger.info(f"Job {job_id} cancelled successfully")
-        else:
-            logger.warning(f"Job cancellation issues: {parsed_result.get('error', 'Unknown error')}")
-            
-        return result
-        
-    except json.JSONDecodeError as e:
-        error_response = json.dumps({
-            "status": "error", 
-            "error": f"Invalid JSON response from IRIS: {str(e)}",
-            "jobId": job_id
-        })
-        logger.error(f"JSON decode error: {str(e)}")
-        return error_response
-        
-    except Exception as e:
-        error_response = json.dumps({
-            "status": "error",
-            "error": f"Unexpected error: {str(e)}",
-            "jobId": job_id
-        })
-        logger.error(f"Unexpected error: {str(e)}")
-        return error_response
-
-@mcp.tool()
-def list_active_jobs() -> str:
-    """
-    List all active async jobs (for debugging/monitoring)
-    
-    Returns:
-        JSON string with active jobs and their statuses
-    """
-    logger.info("Listing all active async jobs")
-    
-    try:
-        # Call IRIS backend
-        result = call_iris_sync("ExecuteMCP.Core.UnitTestAsync", "ListActiveJobs")
-        
-        # Parse result to ensure it's valid JSON
-        parsed_result = json.loads(result)
-        
-        # Log job count
-        if "jobs" in parsed_result:
-            job_count = len(parsed_result["jobs"])
-            logger.info(f"Found {job_count} active jobs")
-        else:
-            logger.info("No active jobs found")
-            
-        return result
-        
-    except json.JSONDecodeError as e:
-        error_response = json.dumps({
-            "status": "error", 
-            "error": f"Invalid JSON response from IRIS: {str(e)}"
-        })
-        logger.error(f"JSON decode error: {str(e)}")
-        return error_response
-        
-    except Exception as e:
-        error_response = json.dumps({
-            "status": "error",
-            "error": f"Unexpected error: {str(e)}"
-        })
-        logger.error(f"Unexpected error: {str(e)}")
-        return error_response
 
 # =====================================================================================
 # OBJECTSCRIPT COMPILATION TOOLS

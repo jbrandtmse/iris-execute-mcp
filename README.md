@@ -1,8 +1,8 @@
 # IRIS Execute MCP Server
 
-## Complete MCP Integration for InterSystems IRIS - 15 Tools Production Ready! 🎉
+## Complete MCP Integration for InterSystems IRIS - 9 Tools Production Ready! 🎉
 
-The IRIS Execute MCP server provides **15 fully functional tools** for comprehensive IRIS integration, including basic operations, compilation tools, and advanced unit testing capabilities with async job management.
+The IRIS Execute MCP server provides **9 fully functional tools** for comprehensive IRIS integration, including basic operations, compilation tools, and advanced unit testing capabilities with WorkMgr-based process isolation.
 
 ## Current Tool Status ✅
 
@@ -17,17 +17,9 @@ The IRIS Execute MCP server provides **15 fully functional tools** for comprehen
 - ✅ **compile_objectscript_class**: Compile one or more ObjectScript classes with error reporting
 - ✅ **compile_objectscript_package**: Compile all classes in a package recursively
 
-### Unit Testing Tools (8) - **[EXPERIMENTAL]**:
-> ⚠️ **Note**: Unit testing tools are experimental and may undergo changes in future releases.
-
-- ✅ **list_unit_tests**: Lists all available unit tests from specified path [EXPERIMENTAL]
-- ✅ **run_unit_tests**: Executes unit tests with traditional %UnitTest.Manager [EXPERIMENTAL]
-- ✅ **get_unit_test_results**: Retrieves test results by result ID [EXPERIMENTAL]
-- ✅ **queue_unit_tests**: Async test execution with immediate job ID return (no timeout) [EXPERIMENTAL]
-- ✅ **poll_unit_tests**: Non-blocking poll for async test results [EXPERIMENTAL]
-- ✅ **get_job_status**: Check job status without retrieving results [EXPERIMENTAL]
-- ✅ **cancel_job**: Cancel running async jobs [EXPERIMENTAL]
-- ✅ **list_active_jobs**: Monitor all active async jobs [EXPERIMENTAL]
+### Unit Testing Tools (2):
+- ✅ **queue_unit_tests**: Queue tests for async execution with WorkMgr-based process isolation
+- ✅ **poll_unit_tests**: Poll for test results with pass/fail counts and detailed information
 
 ## Installation
 
@@ -73,6 +65,18 @@ IRIS_PASSWORD=_SYSTEM
 Do $System.OBJ.CompilePackage("ExecuteMCP")
 ```
 
+### Step 4: Configure Unit Testing (Optional)
+If you plan to use the unit testing tools, configure the test root directory:
+```objectscript
+// Set the unit test root directory (create this directory first)
+Set ^UnitTestRoot = "C:\temp"
+
+// Verify configuration
+Write ^UnitTestRoot
+```
+
+**Important**: The directory specified in ^UnitTestRoot must exist and be writable by IRIS.
+
 ## Cline MCP Configuration
 
 ### Step 1: Open Cline MCP Settings
@@ -82,7 +86,7 @@ Do $System.OBJ.CompilePackage("ExecuteMCP")
 4. Find "Cline > MCP: Servers"
 5. Click "Edit in settings.json"
 
-### Step 2: Production Configuration (All 15 Tools)
+### Step 2: Production Configuration (All 9 Tools)
 
 Add this to your Cline MCP settings:
 
@@ -97,14 +101,8 @@ Add this to your Cline MCP settings:
       "get_system_info",
       "compile_objectscript_class",
       "compile_objectscript_package",
-      "list_unit_tests",
-      "run_unit_tests",
-      "get_unit_test_results",
       "queue_unit_tests",
-      "poll_unit_tests",
-      "get_job_status",
-      "cancel_job",
-      "list_active_jobs"
+      "poll_unit_tests"
     ],
     "disabled": false,
     "timeout": 60,
@@ -125,10 +123,10 @@ Add this to your Cline MCP settings:
 ### Key Configuration Details:
 ✅ **Server Name**: `iris-execute-mcp`  
 ✅ **Script Name**: `iris_execute_mcp.py` (consolidated server with all features)  
-✅ **15 Tools**: 5 basic + 2 compilation + 8 unit testing tools  
+✅ **9 Tools**: 5 basic + 2 compilation + 2 unit testing tools  
 ✅ **Virtual Environment**: Uses isolated dependencies for reliability  
 ✅ **Environment Variables**: Proper IRIS connection configuration  
-✅ **Auto-Approve**: All 15 tools approved for seamless AI workflows
+✅ **Auto-Approve**: All 9 tools approved for seamless AI workflows
 
 ### Step 3: Restart and Test
 1. Save the settings.json file
@@ -137,7 +135,7 @@ Add this to your Cline MCP settings:
 4. Test functionality:
    - "Show me IRIS system information"
    - "Execute: WRITE $ZV"
-   - "List active async jobs"
+   - "Queue unit test ExecuteMCP.Test.SampleUnitTest"
 
 ## Verification
 
@@ -171,6 +169,9 @@ python test_fastmcp.py
 
 # Validate MVP implementation
 python validate_mvp.py
+
+# Test unit test implementation
+python test_unittest_final_validation.py
 ```
 
 ## Tool Documentation
@@ -252,55 +253,64 @@ Compile all classes in a package recursively:
 → Basic compile without recursion
 ```
 
-### Unit Testing Tools [EXPERIMENTAL]
+### Unit Testing Tools
 
-> ⚠️ **Important**: Unit testing tools are currently experimental. While functional, they may undergo interface changes or improvements in future releases. Use with caution in production environments.
+#### queue_unit_tests
+Queue unit test execution using WorkMgr async pattern for process isolation.
 
-#### Synchronous Testing
-Traditional unit test execution with %UnitTest.Manager:
+This tool uses %SYSTEM.WorkMgr to execute tests in an isolated worker process, avoiding %UnitTest.Manager singleton conflicts. Tests run with full assertion macro support and return immediately with a job ID for polling.
+
 ```python
-# List available tests
-"List unit tests in /tests directory"
+# Queue a test suite (note the leading colon for root test suite)
+"Queue unit test :ExecuteMCP.Test.SampleUnitTest"
+→ Returns job ID instantly for polling
 
-# Run specific test
-"Run unit test MySuite:MyClass:MyMethod"
+# Queue with specific test method
+"Queue unit test :ExecuteMCP.Test.SampleUnitTest:TestAddition"
+→ Runs only the TestAddition method
 
-# Get results
-"Get unit test results for ID 123"
+# Default qualifiers (optimized for VS Code workflow)
+# /noload - Don't load classes from filesystem (VS Code auto-syncs)
+# /nodelete - Don't delete test classes after run
+# /recursive - Run all test methods in the class/package
+
+# Custom qualifiers example
+"Queue unit test :ExecuteMCP.Test with qualifiers '/debug/verbose'"
+→ Runs tests with debug output
 ```
 
-#### Asynchronous Testing
-Advanced async job queue for timeout-free testing:
+**Prerequisites for Unit Testing:**
+1. **^UnitTestRoot must be configured** - Points to a valid, writable directory
+2. **Test classes must be compiled** - VS Code syncs but doesn't compile
+3. **Leading colon in test spec** - Required for root test suite format
+
+#### poll_unit_tests
+Poll for unit test results from WorkMgr execution:
 ```python
-# Queue tests (returns immediately with job ID)
-"Queue unit test ExecuteMCP.Test.SampleUnitTest"
-→ Returns job ID instantly
-
-# Poll for results (non-blocking)
+# Poll for results using job ID from queue_unit_tests
 "Poll unit test job 12345"
-→ Returns results if complete, status if running
+→ Returns current status if running, or complete results if finished
 
-# Monitor jobs
-"List all active unit test jobs"
-→ Shows all running/queued jobs
-
-# Cancel if needed
-"Cancel job 12345"
+# Response includes:
+# - Test counts (pass/fail/error)
+# - Individual test method results
+# - Duration and timestamps
+# - Detailed error messages if any
 ```
 
 ## Architecture
 
 ### Technology Stack
 - **Python MCP Server**: FastMCP framework with STDIO transport
-- **IRIS Backend**: ExecuteMCP.Core.Command, ExecuteMCP.Core.Compile, and ExecuteMCP.Core.UnitTest classes
-- **Async Job Management**: ExecuteMCP.Core.UnitTestAsync for timeout-free testing
+- **IRIS Backend**: ExecuteMCP.Core.Command, ExecuteMCP.Core.Compile, and ExecuteMCP.Core.UnitTestQueue classes
+- **Async Job Management**: ExecuteMCP.Core.UnitTestQueue using %SYSTEM.WorkMgr for process isolation
 - **I/O Capture**: Global variable mechanism avoiding STDIO conflicts
 - **Compilation Engine**: $System.OBJ methods with comprehensive error handling
 
 ### Key Innovations
 1. **I/O Capture Breakthrough**: Real output from WRITE commands via ^MCPCapture
 2. **Dynamic Method Invocation**: Call any ObjectScript class method by name
-3. **Async Unit Testing**: Job queue pattern eliminates MCP timeout issues
+3. **WorkMgr Unit Testing**: Process isolation eliminates %UnitTest.Manager singleton issues
 4. **Zero Timeout Architecture**: All operations complete in <100ms
 
 ### Performance Metrics
@@ -334,37 +344,73 @@ If you see "MCP error -32000: Connection closed":
 - Verify virtual environment activation
 - Check Python path points to venv Python
 
-### Unit Test Issues [EXPERIMENTAL]
-> **Note**: Unit testing features are experimental and may require additional configuration.
+### Unit Test Issues
 
-- Ensure test classes extend %UnitTest.TestCase
-- Verify test path exists and is accessible
-- Check async job globals: ^UnitTestAsync.Job
-- Consider that experimental features may have undocumented limitations
+#### Test Discovery Problems
+- **Symptom**: Tests run but report "0 tests found"
+- **Cause**: Test classes not compiled in IRIS
+- **Solution**: 
+  ```objectscript
+  // Compile test classes (VS Code syncs but doesn't compile)
+  Do $System.OBJ.CompilePackage("ExecuteMCP.Test")
+  ```
+
+#### Configuration Issues
+- **Symptom**: "^UnitTestRoot not configured" error
+- **Solution**:
+  ```objectscript
+  // Create test directory first
+  // Windows: mkdir C:\temp
+  // Then in IRIS:
+  Set ^UnitTestRoot = "C:\temp"
+  ```
+
+#### Test Spec Format
+- **Symptom**: "Invalid test specification" error
+- **Cause**: Missing leading colon for root test suite
+- **Correct Format**: `:ExecuteMCP.Test.SampleUnitTest`
+- **Incorrect Format**: `ExecuteMCP.Test.SampleUnitTest` (missing colon)
+
+#### WorkMgr Issues
+- **Symptom**: Tests timeout or never complete
+- **Check WorkMgr availability**:
+  ```objectscript
+  Write ##class(%SYSTEM.WorkMgr).IsWorkerJobActive()
+  ```
 
 ## Advanced Usage
 
 ### Combined Workflows
 ```python
-# System analysis workflow
-1. "Get IRIS version using class methods"
-2. "Store version in global ^SystemInfo('Version')"
-3. "Execute: WRITE 'Analysis complete'"
-4. "Queue comprehensive unit tests"
-5. "Poll for test results"
+# Complete test workflow with compilation
+1. "Compile ObjectScript package ExecuteMCP.Test"
+2. "Queue unit test :ExecuteMCP.Test.SampleUnitTest"
+3. "Poll unit test job <job_id>"
+4. "Get global ^UnitTest.Result to see raw results"
 ```
 
 ### CI/CD Integration
-The async unit testing tools enable CI/CD pipelines:
+The WorkMgr-based unit testing enables robust CI/CD pipelines:
 ```python
 # Queue tests without blocking
-job_id = queue_unit_tests("MyTestSuite")
+job_id = queue_unit_tests(":MyTestSuite")
 
 # Continue with other tasks
-# ...
+compile_classes()
+deploy_changes()
 
 # Check results when ready
 results = poll_unit_tests(job_id)
+if results["failed"] > 0:
+    raise TestFailure(results)
+```
+
+### Understanding Test Results
+The unit test results are stored in globals with the following structure:
+```objectscript
+// Result global structure
+^UnitTest.Result(ResultID, "ExecuteMCP\Test\SampleUnitTest", "SampleUnitTest", "TestAddition")
+// Note: Suite names use backslashes, not dots
 ```
 
 ## Contributing
@@ -378,8 +424,9 @@ Contributions welcome! Please ensure:
 MIT License - See LICENSE file for details
 
 ## Version History
-- **v2.2.0** (September 3, 2025): Added 2 compilation tools (15 total)
-- **v2.1.0** (August 30, 2025): Consolidated server with 13 tools
+- **v2.3.0** (September 7, 2025): Fixed unit testing with WorkMgr pattern (9 tools total)
+- **v2.2.0** (September 3, 2025): Added 2 compilation tools
+- **v2.1.0** (August 30, 2025): Consolidated server with unit testing
 - **v2.0.0**: Added unit testing capabilities
 - **v1.0.0**: Initial 5 basic tools
 
@@ -389,5 +436,5 @@ MIT License - See LICENSE file for details
 - Memory Bank: See `/memory-bank` for project context
 
 ---
-**Status**: ✅ **Production Ready** - All 15 tools operational  
-**Last Updated**: September 3, 2025
+**Status**: ✅ **Production Ready** - All 9 tools operational  
+**Last Updated**: September 7, 2025

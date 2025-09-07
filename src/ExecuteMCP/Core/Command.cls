@@ -38,39 +38,40 @@ ClassMethod ExecuteCommand(pCommand As %String, pNamespace As %String = "HSCUSTO
         // Execute command with timing and output capture
         Set tStartTime = $HOROLOG
         
-        // Capture output using I/O redirection to avoid STDIO pollution
-        Set tOriginalIO = $IO
+        // Simple execution without broken capture logic
         Set tCapturedOutput = ""
-        
         Try {
-            // Create temporary capture device using a global for output capture
-            Set ^MCPCapture = ""
-            
-            // Use a more reliable approach - capture via global variable
-            
-            // For WRITE commands, we need to capture the output differently
-            // Use $DEVICE to capture output to a global
-            Set tCaptureCommand = "Set ^MCPCapture=^MCPCapture_"_pCommand
-            If (pCommand [ "WRITE") {
-                // For WRITE commands, modify to append to our capture global
-                Set tModifiedCommand = $PIECE(pCommand,"WRITE",2)
-                Set tCaptureCommand = "Set ^MCPCapture = ^MCPCapture_("_tModifiedCommand_")"
-                XECUTE tCaptureCommand
+            // For WRITE commands, we need special handling
+            If (pCommand [ "Write ") || (pCommand [ "WRITE ") {
+                // Capture WRITE output to a global
+                Kill ^MCPCapture
+                // Extract what comes after WRITE
+                Set tWriteContent = ""
+                If (pCommand [ "Write ") {
+                    Set tWriteContent = $PIECE(pCommand, "Write ", 2)
+                } ElseIf (pCommand [ "WRITE ") {
+                    Set tWriteContent = $PIECE(pCommand, "WRITE ", 2)
+                }
+                
+                // Execute the write content and capture it
+                If tWriteContent '= "" {
+                    Set tCaptureCmd = "Set ^MCPCapture = "_tWriteContent
+                    XECUTE tCaptureCmd
+                    Set tCapturedOutput = $GET(^MCPCapture, "")
+                    Kill ^MCPCapture
+                } Else {
+                    Set tCapturedOutput = ""
+                }
             } Else {
-                // For non-WRITE commands, execute normally
+                // For non-WRITE commands, just execute
                 XECUTE pCommand
+                Set tCapturedOutput = ""
             }
-            
-            // Get captured output
-            Set tCapturedOutput = $GET(^MCPCapture,"")
-            
         } Catch (captureEx) {
+            // If capture fails, just execute the command normally
             XECUTE pCommand
             Set tCapturedOutput = ""
         }
-        
-        // Clean up capture global
-        Kill ^MCPCapture
         
         // Set output based on what was captured
         If (tCapturedOutput '= "") {
@@ -128,19 +129,21 @@ ClassMethod GetGlobal(pGlobalRef As %String, pNamespace As %String = "HSCUSTOM")
         }
         
         // Validate global reference format
-        If $EXTRACT(pGlobalRef,1) '= "^" {
-            Set tResult.status = "error"
-            Set tResult.errorMessage = "Invalid global reference - must start with ^"
-            Quit
+        // The Python bridge might be stripping the ^ character or encoding it differently
+        Set tGlobalRef = pGlobalRef
+        
+        // If it doesn't start with ^, add it
+        If $EXTRACT(tGlobalRef,1) '= "^" {
+            Set tGlobalRef = "^"_tGlobalRef
         }
         
         // Use $GET with @ for safe dynamic access
-        Set tValue = $GET(@pGlobalRef)
-        Set tExists = $DATA(@pGlobalRef)
+        Set tValue = $GET(@tGlobalRef)
+        Set tExists = $DATA(@tGlobalRef)
         
         // Build success response
         Set tResult.status = "success"
-        Set tResult.globalRef = pGlobalRef
+        Set tResult.globalRef = tGlobalRef
         Set tResult.value = tValue
         Set tResult.exists = tExists
         Set tResult.namespace = pNamespace
@@ -183,23 +186,25 @@ ClassMethod SetGlobal(pGlobalRef As %String, pValue As %String, pNamespace As %S
             Quit
         }
         
-        // Validate global reference format
-        If $EXTRACT(pGlobalRef,1) '= "^" {
-            Set tResult.status = "error"
-            Set tResult.errorMessage = "Invalid global reference - must start with ^"
-            Quit
+        // Validate and fix global reference format
+        // The Python bridge might be stripping the ^ character or encoding it differently
+        Set tGlobalRef = pGlobalRef
+        
+        // If it doesn't start with ^, add it
+        If $EXTRACT(tGlobalRef,1) '= "^" {
+            Set tGlobalRef = "^"_tGlobalRef
         }
         
         // Set the global value using @ for dynamic access
-        Set @pGlobalRef = pValue
+        Set @tGlobalRef = pValue
         
         // Verify the set operation
-        Set tVerifyValue = $GET(@pGlobalRef)
-        Set tExists = $DATA(@pGlobalRef)
+        Set tVerifyValue = $GET(@tGlobalRef)
+        Set tExists = $DATA(@tGlobalRef)
         
         // Build success response
         Set tResult.status = "success"
-        Set tResult.globalRef = pGlobalRef
+        Set tResult.globalRef = tGlobalRef
         Set tResult.setValue = pValue
         Set tResult.verifyValue = tVerifyValue
         Set tResult.exists = tExists

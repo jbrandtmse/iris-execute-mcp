@@ -260,13 +260,19 @@ Queue unit test execution using WorkMgr async pattern for process isolation.
 
 This tool uses %SYSTEM.WorkMgr to execute tests in an isolated worker process, avoiding %UnitTest.Manager singleton conflicts. Tests run with full assertion macro support and return immediately with a job ID for polling.
 
+**Auto-Prefix Feature**: The leading colon for root test suite format is optional - it will be automatically added if missing.
+
 ```python
-# Queue a test suite (note the leading colon for root test suite)
+# Queue a test suite (colon prefix is optional - auto-added if missing)
+"Queue unit test ExecuteMCP.Test.SampleUnitTest"
+→ Returns job ID instantly for polling
+
+# With explicit colon (backward compatible)
 "Queue unit test :ExecuteMCP.Test.SampleUnitTest"
 → Returns job ID instantly for polling
 
-# Queue with specific test method
-"Queue unit test :ExecuteMCP.Test.SampleUnitTest:TestAddition"
+# Queue with specific test method (no leading colon for method-specific tests)
+"Queue unit test ExecuteMCP.Test.SampleUnitTest:TestAddition"
 → Runs only the TestAddition method
 
 # Default qualifiers (optimized for VS Code workflow)
@@ -282,7 +288,7 @@ This tool uses %SYSTEM.WorkMgr to execute tests in an isolated worker process, a
 **Prerequisites for Unit Testing:**
 1. **^UnitTestRoot must be configured** - Points to a valid, writable directory
 2. **Test classes must be compiled** - VS Code syncs but doesn't compile
-3. **Leading colon in test spec** - Required for root test suite format
+3. **Test spec format** - Colon prefix optional (auto-added if missing for root test suites)
 
 #### poll_unit_tests
 Poll for unit test results from WorkMgr execution:
@@ -367,9 +373,10 @@ If you see "MCP error -32000: Connection closed":
 
 #### Test Spec Format
 - **Symptom**: "Invalid test specification" error
-- **Cause**: Missing leading colon for root test suite
-- **Correct Format**: `:ExecuteMCP.Test.SampleUnitTest`
-- **Incorrect Format**: `ExecuteMCP.Test.SampleUnitTest` (missing colon)
+- **Supported Formats** (colon prefix is auto-added if missing):
+  - `ExecuteMCP.Test.SampleUnitTest` - Auto-adds colon prefix
+  - `:ExecuteMCP.Test.SampleUnitTest` - Explicit colon (backward compatible)
+  - `ExecuteMCP.Test.SampleUnitTest:TestMethod` - Method-specific (no leading colon)
 
 #### WorkMgr Issues
 - **Symptom**: Tests timeout or never complete
@@ -424,6 +431,7 @@ Contributions welcome! Please ensure:
 MIT License - See LICENSE file for details
 
 ## Version History
+- **v2.3.1** (September 7, 2025): Added auto-prefix feature for unit test specifications
 - **v2.3.0** (September 7, 2025): Fixed unit testing with WorkMgr pattern (9 tools total)
 - **v2.2.0** (September 3, 2025): Added 2 compilation tools
 - **v2.1.0** (August 30, 2025): Consolidated server with unit testing

@@ -381,7 +381,11 @@ def queue_unit_tests(test_spec: str, qualifiers: str = None, test_root_path: str
     macro support and return immediately with a job ID for polling.
     
     Args:
-        test_spec: Test specification (e.g., "ExecuteMCP.Test.SampleUnitTest")
+        test_spec: Test specification. The colon prefix for root test suite is optional
+                   and will be added automatically if missing.
+                   Examples:
+                   - "ExecuteMCP.Test.SampleUnitTest" (colon will be added)
+                   - ":ExecuteMCP.Test.SampleUnitTest" (already has colon)
                    Can also target specific methods: "ExecuteMCP.Test.SampleUnitTest:TestAddition"
         qualifiers: Optional test run qualifiers. If not provided, defaults to:
                    "/noload/nodelete/recursive" for VS Code workflow.
@@ -397,6 +401,20 @@ def queue_unit_tests(test_spec: str, qualifiers: str = None, test_root_path: str
     Returns:
         JSON string with jobID and queue status. Use poll_unit_tests to retrieve results.
     """
+    # Auto-add colon prefix if missing (for root test suite format)
+    # Note: Method-specific tests (containing ':' for method selection) should NOT have a leading colon
+    if test_spec and not test_spec.startswith(':'):
+        # Check if this is a method-specific test (contains colon for method selection)
+        if ':' in test_spec:
+            # Method-specific tests don't need the leading colon
+            logger.info(f"Method-specific test spec detected, no prefix needed: {test_spec}")
+        elif '.' in test_spec:
+            # Regular test spec without method selection - needs leading colon
+            logger.info(f"Auto-adding colon prefix to test spec: {test_spec} -> :{test_spec}")
+            test_spec = ':' + test_spec
+        else:
+            logger.warning(f"Test spec may be invalid (no package structure detected): {test_spec}")
+    
     logger.info(f"Queueing unit tests with WorkMgr: {test_spec} in namespace {namespace}")
     
     # Pass empty string if None to let IRIS handle defaults

@@ -245,7 +245,12 @@ This tool uses %SYSTEM.WorkMgr to execute tests in an isolated worker process, a
 **Status**: ✅ Working perfectly with WorkMgr-based isolation
 
 **Parameters:**
-- `test_spec` (string, required): Test specification with leading colon for root suite
+- `test_spec` (string, required): Test specification. The colon prefix for root test suite is optional
+  and will be added automatically if missing.
+  Examples:
+  - "ExecuteMCP.Test.SampleUnitTest" (colon will be added)
+  - ":ExecuteMCP.Test.SampleUnitTest" (already has colon)
+  - "ExecuteMCP.Test.SampleUnitTest:TestAddition" (method-specific test)
 - `qualifiers` (string, optional): Test run qualifiers (default: "/noload/nodelete/recursive")
 - `test_root_path` (string, optional): Test root directory (default: uses ^UnitTestRoot)
 - `namespace` (string, optional): IRIS namespace (default: HSCUSTOM)

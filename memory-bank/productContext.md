@@ -106,7 +106,7 @@ A production-ready MCP server providing 9 essential tools for IRIS interaction:
 - **Result**: 60,000x performance improvement
 
 ### Key Requirements
-- **Test Spec Format**: Leading colon required (":PackageName")
+- **Test Spec Format**: Leading colon optional (auto-added in v2.3.1)
 - **^UnitTestRoot**: Must be configured properly
 - **Default Qualifiers**: "/noload/nodelete/recursive" for VS Code
 
@@ -183,11 +183,11 @@ Set ^UnitTestRoot = "C:/InterSystems/IRIS/mgr/user/UnitTests/"
 
 ## Project Status
 
-**Version**: v2.3.0 - WorkMgr Unit Testing Implementation
+**Version**: v2.3.1 - Auto-Prefix Feature for Unit Testing
 **Status**: Production Ready
 **Tools**: 9 fully functional and tested
 **Documentation**: Complete and accurate
 **License**: MIT (open source)
 **Repository**: https://github.com/jbrandtmse/iris-execute-mcp
 
-**Current Achievement**: Complete production-ready MCP server with 9 essential tools for IRIS interaction, featuring breakthrough innovations in I/O capture and unit testing that solve long-standing timeout and output capture challenges.
+**Current Achievement**: Complete production-ready MCP server with 9 essential tools for IRIS interaction, featuring breakthrough innovations in I/O capture and unit testing that solve long-standing timeout and output capture challenges. Latest enhancement includes auto-prefix feature for unit test specifications, improving user experience by automatically adding the required colon prefix when needed.

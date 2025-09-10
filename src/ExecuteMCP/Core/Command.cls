@@ -35,48 +35,96 @@ ClassMethod ExecuteCommand(pCommand As %String, pNamespace As %String = "HSCUSTO
             Quit
         }
         
-        // Execute command with timing and output capture
+        // Execute command with timing
         Set tStartTime = $HOROLOG
         
-        // Simple execution without broken capture logic
-        Set tCapturedOutput = ""
-        Try {
-            // For WRITE commands, we need special handling
-            If (pCommand [ "Write ") || (pCommand [ "WRITE ") {
-                // Capture WRITE output to a global
-                Kill ^MCPCapture
-                // Extract what comes after WRITE
-                Set tWriteContent = ""
-                If (pCommand [ "Write ") {
-                    Set tWriteContent = $PIECE(pCommand, "Write ", 2)
-                } ElseIf (pCommand [ "WRITE ") {
-                    Set tWriteContent = $PIECE(pCommand, "WRITE ", 2)
-                }
-                
-                // Execute the write content and capture it
-                If tWriteContent '= "" {
-                    Set tCaptureCmd = "Set ^MCPCapture = "_tWriteContent
-                    XECUTE tCaptureCmd
-                    Set tCapturedOutput = $GET(^MCPCapture, "")
-                    Kill ^MCPCapture
-                } Else {
-                    Set tCapturedOutput = ""
-                }
-            } Else {
-                // For non-WRITE commands, just execute
-                XECUTE pCommand
-                Set tCapturedOutput = ""
-            }
-        } Catch (captureEx) {
-            // If capture fails, just execute the command normally
-            XECUTE pCommand
-            Set tCapturedOutput = ""
+        // Initialize capture global for WRITE output
+        Kill ^MCPCapture
+        Set ^MCPCapture = ""
+        
+        // Check if command contains WRITE statements that need capture
+        Set tNeedsCapture = 0
+        Set tCommandUpper = $ZCONVERT(pCommand, "U")
+        If (tCommandUpper [ "WRITE") {
+            Set tNeedsCapture = 1
         }
         
-        // Set output based on what was captured
-        If (tCapturedOutput '= "") {
-            Set tOutput = tCapturedOutput
+        // Execute the command
+        If tNeedsCapture {
+            // Build a modified command that captures WRITE output
+            // Parse the command to find WRITE statements
+            Set tModifiedCommand = ""
+            Set tPos = 1
+            Set tLen = $LENGTH(pCommand)
+            
+            While tPos <= tLen {
+                // Find next WRITE statement
+                Set tWritePos = $FIND(tCommandUpper, "WRITE", tPos)
+                
+                If tWritePos = 0 {
+                    // No more WRITE statements, add rest of command
+                    If tPos <= tLen {
+                        Set tRest = $EXTRACT(pCommand, tPos, tLen)
+                        If tModifiedCommand '= "" {
+                            Set tModifiedCommand = tModifiedCommand _ " " _ tRest
+                        } Else {
+                            Set tModifiedCommand = tRest
+                        }
+                    }
+                    Set tPos = tLen + 1
+                } Else {
+                    // Found a WRITE statement
+                    // Add everything before WRITE
+                    If (tWritePos - 5) > tPos {
+                        Set tBefore = $EXTRACT(pCommand, tPos, tWritePos - 6)
+                        If tModifiedCommand '= "" {
+                            Set tModifiedCommand = tModifiedCommand _ " " _ tBefore
+                        } Else {
+                            Set tModifiedCommand = tBefore
+                        }
+                    }
+                    
+                    // Find what's being written (everything up to next statement separator or end)
+                    Set tStartWrite = tWritePos
+                    Set tEndWrite = tLen
+                    
+                    // Look for statement separators
+                    For tSep = " SET", " KILL", " DO", " FOR", " IF", " QUIT", " WRITE" {
+                        Set tSepPos = $FIND(tCommandUpper, tSep, tStartWrite)
+                        If (tSepPos > 0) && (tSepPos < tEndWrite) {
+                            Set tEndWrite = tSepPos - $LENGTH(tSep)
+                        }
+                    }
+                    
+                    // Extract the WRITE argument
+                    Set tWriteArg = $EXTRACT(pCommand, tStartWrite, tEndWrite)
+                    Set tWriteArg = $ZSTRIP(tWriteArg, "<>W")
+                    
+                    // Add modified WRITE that captures to global
+                    If tModifiedCommand '= "" {
+                        Set tModifiedCommand = tModifiedCommand _ " "
+                    }
+                    Set tModifiedCommand = tModifiedCommand _ "SET ^MCPCapture = ^MCPCapture _ (" _ tWriteArg _ ")"
+                    
+                    Set tPos = tEndWrite + 1
+                }
+            }
+            
+            // Execute the modified command if we built one
+            If tModifiedCommand '= "" {
+                XECUTE tModifiedCommand
+            } Else {
+                // Fallback: execute original command
+                XECUTE pCommand
+            }
+            
+            // Get captured output
+            Set tOutput = $GET(^MCPCapture, "")
+            Kill ^MCPCapture
+            
         } Else {
+            // No WRITE statements, just execute normally
+            XECUTE pCommand
             Set tOutput = "Command executed successfully"
         }
         
@@ -91,7 +139,10 @@ ClassMethod ExecuteCommand(pCommand As %String, pNamespace As %String = "HSCUSTO
         Set tResult.mode = "direct"
         Set tResult.timestamp = $ZDateTime($HOROLOG, 3)
         
-    } Catch (ex) {
+    } Catch ex {
+        // Clean up capture global on error
+        Kill ^MCPCapture
+        
         Set tResult.status = "error"
         Set tResult.errorMessage = ex.DisplayString()
         Set tResult.namespace = pNamespace
@@ -150,7 +201,7 @@ ClassMethod GetGlobal(pGlobalRef As %String, pNamespace As %String = "HSCUSTOM")
         Set tResult.timestamp = $ZDateTime($HOROLOG, 3)
         Set tResult.mode = "get_global"
         
-    } Catch (ex) {
+    } Catch ex {
         Set tResult.status = "error"
         Set tResult.errorMessage = ex.DisplayString()
         Set tResult.globalRef = pGlobalRef
@@ -212,7 +263,7 @@ ClassMethod SetGlobal(pGlobalRef As %String, pValue As %String, pNamespace As %S
         Set tResult.timestamp = $ZDateTime($HOROLOG, 3)
         Set tResult.mode = "set_global"
         
-    } Catch (ex) {
+    } Catch ex {
         Set tResult.status = "error"
         Set tResult.errorMessage = ex.DisplayString()
         Set tResult.globalRef = pGlobalRef
@@ -242,7 +293,7 @@ ClassMethod GetSystemInfo() As %String
         Set tResult.serverTime = $HOROLOG
         Set tResult.mode = "info"
         
-    } Catch (ex) {
+    } Catch ex {
         Set tResult.status = "error"
         Set tResult.errorMessage = ex.DisplayString()
     }
@@ -351,7 +402,7 @@ ClassMethod ExecuteClassMethod(pClassName As %String, pMethodName As %String, pP
             // Get any captured output from methods that use WRITE
             Set tCapturedOutput = $GET(^MCPCapture, "")
             
-        } Catch (execEx) {
+        } Catch execEx {
             // Clean up on error
             Kill ^MCPCapture
             Kill ^MCPMethodResult
@@ -396,7 +447,7 @@ ClassMethod ExecuteClassMethod(pClassName As %String, pMethodName As %String, pP
         Set tResult.namespace = pNamespace
         Set tResult.timestamp = $ZDateTime($HOROLOG, 3)
         
-    } Catch (ex) {
+    } Catch ex {
         Set tResult.status = "error"
         Set tResult.errorMessage = ex.DisplayString()
         Set tResult.className = pClassName

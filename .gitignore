@@ -1,3 +1,9 @@
+# Environment Variables - IMPORTANT: Contains sensitive credentials
+.env
+.env.local
+.env.production
+.env.development
+
 # IRIS System Files
 # Track ExecuteMCP source code classes - only ignore generated/temporary IRIS files
 *.int
@@ -51,6 +57,7 @@ ENV/
 .Trashes
 ehthumbs.db
 Thumbs.db
+nul
 
 # IDE
 *.swp

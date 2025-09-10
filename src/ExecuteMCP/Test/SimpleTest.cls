@@ -1,40 +1,44 @@
 /// ExecuteMCP.Test.SimpleTest
-/// Simple test class that works with async execution without %UnitTest.TestCase dependencies
-Class ExecuteMCP.Test.SimpleTest Extends %RegisteredObject
+/// Simple test class that extends ExecuteMCP.TestRunner.TestCase for TestRunner compatibility
+Class ExecuteMCP.Test.SimpleTest Extends ExecuteMCP.TestRunner.TestCase
 {
 
 /// Test that always passes
-Method TestAlwaysPass() As %Boolean
+Method TestAlwaysPass() As %Status
 {
-    Return (1=1)
+    Do $$$AssertEquals(1, 1, "One equals one")
+    Quit $$$OK
 }
 
 /// Test that always fails  
-Method TestAlwaysFail() As %Boolean
+Method TestAlwaysFail() As %Status
 {
-    Return (1=2)
+    Do $$$AssertEquals(1, 2, "One should not equal two")
+    Quit $$$OK
 }
 
 /// Test with calculations
-Method TestCalculations() As %Boolean
+Method TestCalculations() As %Status
 {
     Set result = 2 + 2
-    If result '= 4 Return 0
+    Do $$$AssertEquals(result, 4, "2 + 2 = 4")
     
     Set result = 10 / 2
-    If result '= 5 Return 0
+    Do $$$AssertEquals(result, 5, "10 / 2 = 5")
     
-    Return 1
+    Quit $$$OK
 }
 
 /// Test with string operations
-Method TestStringOperations() As %Boolean
+Method TestStringOperations() As %Status
 {
     Set str1 = "Hello"
     Set str2 = "World"
     Set combined = str1_" "_str2
     
-    Return (combined = "Hello World")
+    Do $$$AssertEquals(combined, "Hello World", "String concatenation")
+    
+    Quit $$$OK
 }
 
 }

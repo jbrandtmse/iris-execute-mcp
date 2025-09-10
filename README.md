@@ -1,8 +1,8 @@
 # IRIS Execute MCP Server
 
-## Complete MCP Integration for InterSystems IRIS - 9 Tools Production Ready! 🎉
+## Complete MCP Integration for InterSystems IRIS - 8 Development Tools! 🎉
 
-The IRIS Execute MCP server provides **9 fully functional tools** for comprehensive IRIS integration, including basic operations, compilation tools, and advanced unit testing capabilities with WorkMgr-based process isolation.
+The IRIS Execute MCP server provides **8 fully functional tools** for comprehensive IRIS development integration, including basic operations, compilation tools, and advanced unit testing capabilities with a custom VS Code-friendly TestRunner.
 
 ## Current Tool Status ✅
 
@@ -17,9 +17,8 @@ The IRIS Execute MCP server provides **9 fully functional tools** for comprehens
 - ✅ **compile_objectscript_class**: Compile one or more ObjectScript classes with error reporting
 - ✅ **compile_objectscript_package**: Compile all classes in a package recursively
 
-### Unit Testing Tools (2):
-- ✅ **queue_unit_tests**: Queue tests for async execution with WorkMgr-based process isolation
-- ✅ **poll_unit_tests**: Poll for test results with pass/fail counts and detailed information
+### Unit Testing Tool (1 - Experimental):
+- ⚠️ **execute_unit_tests** (EXPERIMENTAL): Execute tests using custom ExecuteMCP.TestRunner (VS Code friendly!)
 
 ## Installation
 
@@ -59,23 +58,11 @@ IRIS_PASSWORD=_SYSTEM
 
 ### Step 3: Install IRIS Classes
 1. Open IRIS Studio or VS Code with ObjectScript extension
-2. Import classes from `src/ExecuteMCP/Core/` directory
+2. Import classes from `src/ExecuteMCP/Core/` and `src/ExecuteMCP/TestRunner/` directories
 3. Compile the ExecuteMCP package:
 ```objectscript
 Do $System.OBJ.CompilePackage("ExecuteMCP")
 ```
-
-### Step 4: Configure Unit Testing (Optional)
-If you plan to use the unit testing tools, configure the test root directory:
-```objectscript
-// Set the unit test root directory (create this directory first)
-Set ^UnitTestRoot = "C:\temp"
-
-// Verify configuration
-Write ^UnitTestRoot
-```
-
-**Important**: The directory specified in ^UnitTestRoot must exist and be writable by IRIS.
 
 ## Cline MCP Configuration
 
@@ -86,7 +73,7 @@ Write ^UnitTestRoot
 4. Find "Cline > MCP: Servers"
 5. Click "Edit in settings.json"
 
-### Step 2: Production Configuration (All 9 Tools)
+### Step 2: Configuration (All 8 Tools)
 
 Add this to your Cline MCP settings:
 
@@ -101,8 +88,7 @@ Add this to your Cline MCP settings:
       "get_system_info",
       "compile_objectscript_class",
       "compile_objectscript_package",
-      "queue_unit_tests",
-      "poll_unit_tests"
+      "execute_unit_tests"
     ],
     "disabled": false,
     "timeout": 60,
@@ -123,10 +109,10 @@ Add this to your Cline MCP settings:
 ### Key Configuration Details:
 ✅ **Server Name**: `iris-execute-mcp`  
 ✅ **Script Name**: `iris_execute_mcp.py` (consolidated server with all features)  
-✅ **9 Tools**: 5 basic + 2 compilation + 2 unit testing tools  
+✅ **8 Tools**: 5 basic + 2 compilation + 1 unit testing tool  
 ✅ **Virtual Environment**: Uses isolated dependencies for reliability  
 ✅ **Environment Variables**: Proper IRIS connection configuration  
-✅ **Auto-Approve**: All 9 tools approved for seamless AI workflows
+✅ **Auto-Approve**: All 8 tools approved for seamless AI workflows
 
 ### Step 3: Restart and Test
 1. Save the settings.json file
@@ -135,7 +121,7 @@ Add this to your Cline MCP settings:
 4. Test functionality:
    - "Show me IRIS system information"
    - "Execute: WRITE $ZV"
-   - "Queue unit test ExecuteMCP.Test.SampleUnitTest"
+   - "Execute unit tests for ExecuteMCP.Test.SampleUnitTest"
 
 ## Verification
 
@@ -253,77 +239,63 @@ Compile all classes in a package recursively:
 → Basic compile without recursion
 ```
 
-### Unit Testing Tools
+### Unit Testing Tool (Experimental)
 
-#### queue_unit_tests
-Queue unit test execution using WorkMgr async pattern for process isolation.
+#### execute_unit_tests (EXPERIMENTAL)
+Execute tests using the custom ExecuteMCP.TestRunner instead of %UnitTest.Manager.
 
-This tool uses %SYSTEM.WorkMgr to execute tests in an isolated worker process, avoiding %UnitTest.Manager singleton conflicts. Tests run with full assertion macro support and return immediately with a job ID for polling.
+**⚠️ Note: This tool is experimental and under active development.**
 
-**Auto-Prefix Feature**: The leading colon for root test suite format is optional - it will be automatically added if missing.
+This tool provides a VS Code-friendly alternative to the standard %UnitTest.Manager, eliminating file path dependencies and VS Code sync issues. The custom TestRunner executes tests directly from compiled classes without filesystem interaction.
 
 ```python
-# Queue a test suite (colon prefix is optional - auto-added if missing)
-"Queue unit test ExecuteMCP.Test.SampleUnitTest"
-→ Returns job ID instantly for polling
+# Run all tests in a package
+"Execute unit tests for ExecuteMCP.Test"
+→ Executes all test classes in the package
 
-# With explicit colon (backward compatible)
-"Queue unit test :ExecuteMCP.Test.SampleUnitTest"
-→ Returns job ID instantly for polling
+# Run tests in a specific class
+"Execute unit tests for ExecuteMCP.Test.SimpleTest"
+→ Executes all test methods in the class
 
-# Queue with specific test method (no leading colon for method-specific tests)
-"Queue unit test ExecuteMCP.Test.SampleUnitTest:TestAddition"
-→ Runs only the TestAddition method
-
-# Default qualifiers (optimized for VS Code workflow)
-# /noload - Don't load classes from filesystem (VS Code auto-syncs)
-# /nodelete - Don't delete test classes after run
-# /recursive - Run all test methods in the class/package
-
-# Custom qualifiers example
-"Queue unit test :ExecuteMCP.Test with qualifiers '/debug/verbose'"
-→ Runs tests with debug output
-```
-
-**Prerequisites for Unit Testing:**
-1. **^UnitTestRoot must be configured** - Points to a valid, writable directory
-2. **Test classes must be compiled** - VS Code syncs but doesn't compile
-3. **Test spec format** - Colon prefix optional (auto-added if missing for root test suites)
-
-#### poll_unit_tests
-Poll for unit test results from WorkMgr execution:
-```python
-# Poll for results using job ID from queue_unit_tests
-"Poll unit test job 12345"
-→ Returns current status if running, or complete results if finished
+# Run a specific test method
+"Execute unit tests for ExecuteMCP.Test.SimpleTest:TestAddition"
+→ Executes only the specified test method
 
 # Response includes:
-# - Test counts (pass/fail/error)
-# - Individual test method results
-# - Duration and timestamps
-# - Detailed error messages if any
+# - Summary with pass/fail counts
+# - Individual test results
+# - Execution times
+# - Full assertion details
 ```
+
+**Advantages over %UnitTest.Manager:**
+- ✅ No filesystem dependencies (works with VS Code auto-sync)
+- ✅ No ^UnitTestRoot configuration required
+- ✅ Executes from compiled classes directly
+- ✅ Full support for %UnitTest.TestCase and assertion macros
+- ✅ Clean JSON response format
+- ✅ Process isolation without WorkMgr complexity
 
 ## Architecture
 
 ### Technology Stack
 - **Python MCP Server**: FastMCP framework with STDIO transport
-- **IRIS Backend**: ExecuteMCP.Core.Command, ExecuteMCP.Core.Compile, and ExecuteMCP.Core.UnitTestQueue classes
-- **Async Job Management**: ExecuteMCP.Core.UnitTestQueue using %SYSTEM.WorkMgr for process isolation
+- **IRIS Backend**: ExecuteMCP.Core.Command, ExecuteMCP.Core.Compile, and ExecuteMCP.TestRunner classes
+- **Custom TestRunner**: ExecuteMCP.TestRunner.Manager for VS Code-friendly test execution
 - **I/O Capture**: Global variable mechanism avoiding STDIO conflicts
 - **Compilation Engine**: $System.OBJ methods with comprehensive error handling
 
 ### Key Innovations
 1. **I/O Capture Breakthrough**: Real output from WRITE commands via ^MCPCapture
 2. **Dynamic Method Invocation**: Call any ObjectScript class method by name
-3. **WorkMgr Unit Testing**: Process isolation eliminates %UnitTest.Manager singleton issues
+3. **Custom TestRunner**: VS Code-friendly alternative to %UnitTest.Manager
 4. **Zero Timeout Architecture**: All operations complete in <100ms
 
 ### Performance Metrics
 - ✅ **Command Execution**: 0ms with I/O capture
 - ✅ **Method Invocation**: <10ms for complex calls
 - ✅ **Global Operations**: Sub-millisecond response
-- ✅ **Unit Test Queueing**: Instant job ID return
+- ✅ **Unit Test Execution**: Direct execution with structured results
 - ✅ **System Info**: <50ms full details
 
 ## Troubleshooting
@@ -361,29 +333,11 @@ If you see "MCP error -32000: Connection closed":
   Do $System.OBJ.CompilePackage("ExecuteMCP.Test")
   ```
 
-#### Configuration Issues
-- **Symptom**: "^UnitTestRoot not configured" error
-- **Solution**:
-  ```objectscript
-  // Create test directory first
-  // Windows: mkdir C:\temp
-  // Then in IRIS:
-  Set ^UnitTestRoot = "C:\temp"
-  ```
-
 #### Test Spec Format
-- **Symptom**: "Invalid test specification" error
-- **Supported Formats** (colon prefix is auto-added if missing):
-  - `ExecuteMCP.Test.SampleUnitTest` - Auto-adds colon prefix
-  - `:ExecuteMCP.Test.SampleUnitTest` - Explicit colon (backward compatible)
-  - `ExecuteMCP.Test.SampleUnitTest:TestMethod` - Method-specific (no leading colon)
-
-#### WorkMgr Issues
-- **Symptom**: Tests timeout or never complete
-- **Check WorkMgr availability**:
-  ```objectscript
-  Write ##class(%SYSTEM.WorkMgr).IsWorkerJobActive()
-  ```
+- **Supported Formats**:
+  - `ExecuteMCP.Test` - Run all tests in package
+  - `ExecuteMCP.Test.SampleUnitTest` - Run all tests in class
+  - `ExecuteMCP.Test.SampleUnitTest:TestMethod` - Run specific method
 
 ## Advanced Usage
 
@@ -391,33 +345,32 @@ If you see "MCP error -32000: Connection closed":
 ```python
 # Complete test workflow with compilation
 1. "Compile ObjectScript package ExecuteMCP.Test"
-2. "Queue unit test :ExecuteMCP.Test.SampleUnitTest"
-3. "Poll unit test job <job_id>"
-4. "Get global ^UnitTest.Result to see raw results"
-```
-
-### CI/CD Integration
-The WorkMgr-based unit testing enables robust CI/CD pipelines:
-```python
-# Queue tests without blocking
-job_id = queue_unit_tests(":MyTestSuite")
-
-# Continue with other tasks
-compile_classes()
-deploy_changes()
-
-# Check results when ready
-results = poll_unit_tests(job_id)
-if results["failed"] > 0:
-    raise TestFailure(results)
+2. "Execute unit tests for ExecuteMCP.Test.SampleUnitTest"
+3. "Get global ^TestRunnerResults to see detailed results"
 ```
 
 ### Understanding Test Results
-The unit test results are stored in globals with the following structure:
-```objectscript
-// Result global structure
-^UnitTest.Result(ResultID, "ExecuteMCP\Test\SampleUnitTest", "SampleUnitTest", "TestAddition")
-// Note: Suite names use backslashes, not dots
+The custom TestRunner stores results in process-local globals during execution and returns structured JSON:
+```json
+{
+  "status": "success",
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0,
+    "total": 6
+  },
+  "tests": [
+    {
+      "class": "ExecuteMCP.Test.SimpleTest",
+      "method": "TestAddition",
+      "status": "passed",
+      "duration": 0.001
+    }
+  ],
+  "executionTime": 0.125
+}
 ```
 
 ## Contributing
@@ -431,6 +384,8 @@ Contributions welcome! Please ensure:
 MIT License - See LICENSE file for details
 
 ## Version History
+- **v3.0.0** (September 9, 2025): Refactored to 8 development tools, removed deprecated WorkMgr async pattern
+- **v2.4.0** (September 9, 2025): Added custom TestRunner MCP tool (10 tools total)
 - **v2.3.1** (September 7, 2025): Added auto-prefix feature for unit test specifications
 - **v2.3.0** (September 7, 2025): Fixed unit testing with WorkMgr pattern (9 tools total)
 - **v2.2.0** (September 3, 2025): Added 2 compilation tools
@@ -444,5 +399,5 @@ MIT License - See LICENSE file for details
 - Memory Bank: See `/memory-bank` for project context
 
 ---
-**Status**: ✅ **Production Ready** - All 9 tools operational  
-**Last Updated**: September 7, 2025
+**Status**: ✅ **Development Tool** - All 8 tools operational for IRIS development  
+**Last Updated**: September 9, 2025

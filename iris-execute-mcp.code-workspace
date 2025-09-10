@@ -5,7 +5,7 @@
 		},
 		{
 			"name": "local:HSCUSTOM",
-			"uri": "isfs://local:hscustom/"
+			"uri": "isfs://local:hscustom/?filter=*&generated=1&system=1"
 		}
 	],
 	"settings": {}

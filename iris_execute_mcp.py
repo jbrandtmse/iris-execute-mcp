@@ -368,136 +368,71 @@ def execute_classmethod(
 
 
 # =====================================================================================
-# ASYNC UNIT TESTING TOOLS - WORKMANAGER-BASED IMPLEMENTATION
+# CUSTOM TESTRUNNER TOOL - RENAMED FROM run_custom_testrunner TO execute_unit_tests
 # =====================================================================================
 
 @mcp.tool()
-def queue_unit_tests(test_spec: str, qualifiers: str = None, test_root_path: str = "", namespace: str = "HSCUSTOM") -> str:
+def execute_unit_tests(test_spec: str, namespace: str = "HSCUSTOM") -> str:
     """
-    Queue unit test execution using WorkMgr async pattern for process isolation.
+    Execute unit tests using the custom ExecuteMCP.TestRunner.
     
-    This tool uses %SYSTEM.WorkMgr to execute tests in an isolated worker process,
-    avoiding %UnitTest.Manager singleton conflicts. Tests run with full assertion
-    macro support and return immediately with a job ID for polling.
+    This custom TestRunner bypasses VS Code sync issues by executing tests from
+    already-compiled packages rather than loading from the filesystem. It maintains
+    full compatibility with %UnitTest.TestCase and assertion macros while providing
+    more flexibility and eliminating file path dependencies.
     
     Args:
-        test_spec: Test specification. The colon prefix for root test suite is optional
-                   and will be added automatically if missing.
+        test_spec: Test specification (package, class, or class:method)
                    Examples:
-                   - "ExecuteMCP.Test.SampleUnitTest" (colon will be added)
-                   - ":ExecuteMCP.Test.SampleUnitTest" (already has colon)
-                   Can also target specific methods: "ExecuteMCP.Test.SampleUnitTest:TestAddition"
-        qualifiers: Optional test run qualifiers. If not provided, defaults to:
-                   "/noload/nodelete/recursive" for VS Code workflow.
-                   Common qualifiers:
-                   - /noload: Don't load classes from filesystem (VS Code auto-syncs)
-                   - /nodelete: Don't delete test classes after run
-                   - /recursive: Run all test methods in the class/package
-                   - /debug: Enable debug output
-                   - /verbose: Verbose output
-        test_root_path: Optional test root directory (default: uses ^UnitTestRoot)
+                   - "ExecuteMCP.Test" (run all tests in package)
+                   - "ExecuteMCP.Test.SampleUnitTest" (run all methods in class)
+                   - "ExecuteMCP.Test.SampleUnitTest:TestAddition" (run specific method)
         namespace: Optional IRIS namespace (default: HSCUSTOM)
     
     Returns:
-        JSON string with jobID and queue status. Use poll_unit_tests to retrieve results.
+        JSON string with complete test results including:
+        - summary: Overall test statistics (passed, failed, errors, skipped)
+        - tests: Detailed results for each test method
+        - executionTime: Total time taken
+        - status: Overall execution status
     """
-    # Auto-add colon prefix if missing (for root test suite format)
-    # Note: Method-specific tests (containing ':' for method selection) should NOT have a leading colon
-    if test_spec and not test_spec.startswith(':'):
-        # Check if this is a method-specific test (contains colon for method selection)
-        if ':' in test_spec:
-            # Method-specific tests don't need the leading colon
-            logger.info(f"Method-specific test spec detected, no prefix needed: {test_spec}")
-        elif '.' in test_spec:
-            # Regular test spec without method selection - needs leading colon
-            logger.info(f"Auto-adding colon prefix to test spec: {test_spec} -> :{test_spec}")
-            test_spec = ':' + test_spec
-        else:
-            logger.warning(f"Test spec may be invalid (no package structure detected): {test_spec}")
-    
-    logger.info(f"Queueing unit tests with WorkMgr: {test_spec} in namespace {namespace}")
-    
-    # Pass empty string if None to let IRIS handle defaults
-    if qualifiers is None:
-        qualifiers = ""
+    logger.info(f"Running custom TestRunner: {test_spec} in namespace {namespace}")
     
     try:
-        # Call IRIS backend using new WorkMgr pattern (namespace used for connection, not as parameter)
-        result = call_iris_sync("ExecuteMCP.Core.UnitTestQueue", "QueueTestExecution", test_spec, qualifiers, test_root_path)
+        # Call the custom TestRunner's RunTestSpec method
+        result = call_iris_with_timeout(
+            "ExecuteMCP.TestRunner.Manager",
+            "RunTestSpec",
+            30.0,  # 30 second timeout for test execution
+            test_spec,
+            namespace
+        )
         
         # Parse result to ensure it's valid JSON
         parsed_result = json.loads(result)
         
-        # Log success
-        if parsed_result.get("status") == "queued":
-            logger.info(f"Unit tests queued successfully with job ID: {parsed_result.get('jobID')}")
-        else:
-            logger.warning(f"Unit test queueing issues: {parsed_result.get('error', 'Unknown error')}")
-            
-        return result
-        
-    except json.JSONDecodeError as e:
-        error_response = json.dumps({
-            "status": "error", 
-            "error": f"Invalid JSON response from IRIS: {str(e)}",
-            "testSpec": test_spec,
-            "qualifiers": qualifiers
-        })
-        logger.error(f"JSON decode error: {str(e)}")
-        return error_response
-        
-    except Exception as e:
-        error_response = json.dumps({
-            "status": "error",
-            "error": f"Unexpected error: {str(e)}",
-            "testSpec": test_spec,
-            "qualifiers": qualifiers
-        })
-        logger.error(f"Unexpected error: {str(e)}")
-        return error_response
-
-@mcp.tool()
-def poll_unit_tests(job_id: str, namespace: str = "HSCUSTOM") -> str:
-    """
-    Poll for unit test results from WorkMgr execution.
-    
-    Checks the status of tests executing in an isolated worker process.
-    Returns current status if running, or complete results if finished.
-    
-    Args:
-        job_id: Job ID returned from queue_unit_tests
-        namespace: Optional IRIS namespace (default: HSCUSTOM)
-    
-    Returns:
-        JSON string with test status or complete results including pass/fail counts.
-    """
-    logger.info(f"Polling unit test results: Job ID {job_id}")
-    
-    try:
-        # Call IRIS backend (namespace used for connection, not as parameter)
-        result = call_iris_sync("ExecuteMCP.Core.UnitTestQueue", "PollResults", job_id)
-        
-        # Parse result to ensure it's valid JSON
-        parsed_result = json.loads(result)
-        
-        # Log appropriate status
+        # Log test execution status
         status = parsed_result.get("status", "unknown")
         if status == "success":
-            logger.info(f"Unit tests completed successfully for job {job_id}")
-        elif status == "running":
-            logger.info(f"Unit tests still running for job {job_id}")
+            summary = parsed_result.get("summary", {})
+            total = summary.get("total", 0)
+            passed = summary.get("passed", 0)
+            failed = summary.get("failed", 0)
+            errors = summary.get("errors", 0)
+            logger.info(f"TestRunner completed: {passed}/{total} passed, {failed} failed, {errors} errors")
         elif status == "error":
-            logger.warning(f"Unit test execution failed for job {job_id}: {parsed_result.get('error', 'Unknown error')}")
+            logger.error(f"TestRunner execution failed: {parsed_result.get('error', 'Unknown error')}")
         else:
-            logger.warning(f"Unknown status for job {job_id}: {status}")
+            logger.warning(f"TestRunner returned unexpected status: {status}")
             
         return result
         
     except json.JSONDecodeError as e:
         error_response = json.dumps({
-            "status": "error", 
+            "status": "error",
             "error": f"Invalid JSON response from IRIS: {str(e)}",
-            "jobId": job_id
+            "testSpec": test_spec,
+            "namespace": namespace
         })
         logger.error(f"JSON decode error: {str(e)}")
         return error_response
@@ -506,11 +441,11 @@ def poll_unit_tests(job_id: str, namespace: str = "HSCUSTOM") -> str:
         error_response = json.dumps({
             "status": "error",
             "error": f"Unexpected error: {str(e)}",
-            "jobId": job_id
+            "testSpec": test_spec,
+            "namespace": namespace
         })
         logger.error(f"Unexpected error: {str(e)}")
         return error_response
-
 
 # =====================================================================================
 # OBJECTSCRIPT COMPILATION TOOLS

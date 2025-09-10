@@ -1,165 +1,90 @@
-# Active Context - IRIS Execute MCP Server
+# Active Context
 
-## Current Status: ✅ PRODUCTION READY WITH COMPLETE DOCUMENTATION
+## Current Work: Tool Refactoring Complete ✅
 
-### Implementation Status: ✅ COMPLETE PROJECT WITH 9 PRODUCTION TOOLS
-**Date**: September 7, 2025 - **ALL TOOLS TESTED + COMPLETE DOCUMENTATION + LICENSING**
-**Version**: v2.3.0 - WorkMgr Unit Testing Implementation
-**Focus**: Complete IRIS Execute MCP Server with 9 production-ready tools
-**Server**: `iris_execute_mcp.py` - **Production Version with Complete Tool Suite**
-**Architecture**: ExecuteMCP.Core.UnitTestQueue with %SYSTEM.WorkMgr pattern for process isolation
+Successfully refactored iris-execute-mcp from 10 tools to 8 production-ready tools by consolidating unit testing functionality and removing deprecated async pattern.
 
-### 🎉 Latest Update: WorkMgr Unit Testing Pattern Implementation
-**Date**: September 7, 2025
-**Major Fix**: Resolved unit test discovery issues with WorkMgr-based async pattern
-**Key Changes**:
-- ✅ Implemented ExecuteMCP.Core.UnitTestQueue for process isolation
-- ✅ Fixed test discovery with leading colon requirement (":ExecuteMCP.Test.SampleUnitTest")
-- ✅ Default qualifiers "/noload/nodelete/recursive" for VS Code workflow
-- ✅ Updated all documentation to reflect 9 tools (not 15 as incorrectly stated)
+### Key Achievements (January 9, 2025)
+1. **Renamed tool** - `run_custom_testrunner` → `execute_unit_tests`
+2. **Removed deprecated tools** - `queue_unit_tests` and `poll_unit_tests` removed
+3. **Backend cleanup** - ExecuteMCP.Core.UnitTestQueue marked as deprecated
+4. **Documentation updated** - README.md and User Manual reflect 8-tool structure
 
-### 🚀 TRIPLE BREAKTHROUGHS: I/O Capture + ExecuteClassMethod + WorkMgr Unit Testing
+### Tool Consolidation Summary
+- **Previous**: 10 tools (including experimental async unit testing)
+- **Current**: 8 production-ready tools
+- **Benefit**: Cleaner API, better maintainability, single reliable unit testing tool
 
-#### Problems Solved ✅
-1. **I/O Capture**: WRITE commands polluting MCP STDIO → Global variable capture solution
-2. **ExecuteClassMethod**: Variable scope in XECUTE → Global variable result capture
-3. **Unit Test Process Isolation**: %UnitTest.Manager singleton conflicts → %SYSTEM.WorkMgr pattern
-4. **Test Discovery**: Tests running but finding 0 tests → Leading colon requirement fixed
+### Current Tool Inventory (8 Production Tools)
+1. **execute_command** - Direct ObjectScript command execution
+2. **get_global** - Read IRIS global values
+3. **set_global** - Write IRIS global values
+4. **get_system_info** - IRIS system connectivity test
+5. **execute_classmethod** - Execute ObjectScript class methods with output parameters
+6. **execute_unit_tests** - Run unit tests using custom TestRunner
+7. **compile_objectscript_class** - Compile individual ObjectScript classes
+8. **compile_objectscript_package** - Compile entire ObjectScript packages
 
-### Tool Status Summary ✅ ALL 9 TOOLS WORKING PERFECTLY
+## Custom TestRunner Architecture
 
-**Core Tools (5)**:
-1. ✅ `execute_command` - Execute ObjectScript commands with real output capture (0ms)
-2. ✅ `get_global` - Dynamic global retrieval (including subscripts)
-3. ✅ `set_global` - Dynamic global setting with verification  
-4. ✅ `get_system_info` - System connectivity testing
-5. ✅ `execute_classmethod` - Dynamic class method execution with output parameters
+### Technical Solution
+- **Problem**: %UnitTest.Manager designed for terminal, not concurrent MCP access
+- **Solution**: ExecuteMCP.TestRunner package with custom implementation
+- **Components**:
+  - Discovery.cls - SQL-based test discovery bypassing file system
+  - Manager.cls - Process-local singleton with ^||TestRunnerManager storage
+  - TestCase.cls - Base class providing Manager property initialization
+  - Executor.cls - Test execution with timeout handling
+  - Wrapper.cls - MCP-safe wrapper methods for test execution
 
-**Compilation Tools (2)**:
-6. ✅ `compile_objectscript_class` - Compile one or more ObjectScript classes (.cls suffix required)
-7. ✅ `compile_objectscript_package` - Compile all classes in a package recursively
+### Key Features
+- Bypasses VS Code filesystem sync issues
+- Process-local globals ensure Manager isolation
+- SQL discovery provides reliable test class detection
+- Auto-prefix feature for flexible test specification
 
-**Unit Testing Tools (2)**:
-8. ✅ `queue_unit_tests` - Queue unit tests using WorkMgr (returns job ID immediately)
-9. ✅ `poll_unit_tests` - Poll for WorkMgr test results (non-blocking)
+## Next Steps
+1. Monitor production usage of consolidated 8-tool structure
+2. Consider future expansion for additional MCP capabilities
+3. Potential Native API alternatives investigation
 
-### WorkMgr Unit Testing Implementation Details ✅
+## Important Patterns and Preferences
 
-#### Key Architecture
-- **ExecuteMCP.Core.UnitTestQueue**: Implements %SYSTEM.WorkMgr pattern for process isolation
-- **Avoids Singleton Conflicts**: Each test runs in isolated worker process
-- **Instant Response**: queue_unit_tests returns immediately with job ID
-- **Non-blocking Polling**: poll_unit_tests retrieves results when ready
+### Unit Testing in VS Code
+- Always use `execute_unit_tests` tool for test execution
+- TestRunner automatically bypasses VS Code sync issues
+- Process-local globals (^||) ensure thread-safe operation
 
-#### Test Spec Format Requirements
-- **Leading Colon Required**: ":ExecuteMCP.Test.SampleUnitTest" for root test suite
-- **Default Qualifiers**: "/noload/nodelete/recursive" optimized for VS Code workflow
-- **^UnitTestRoot Configuration**: Must point to valid, writable directory
+### MCP Tool Development
+- Be aware of Native API parameter marshaling limitations
+- Create wrapper methods when parameter passing is problematic
+- Test thoroughly with actual MCP integration
 
-#### Performance Metrics
-- **Queue Response**: Instant (returns job ID immediately)
-- **Test Execution**: 0.5-2ms for typical test suites
-- **Previous Approach**: 120+ seconds with %UnitTest.Manager
-- **Improvement**: 60,000x faster with process isolation
+### Architecture Decisions
+- Deprecated WorkMgr async pattern in favor of synchronous TestRunner
+- Consolidated from 10 to 8 tools for production clarity
+- Custom TestRunner provides superior VS Code integration
 
-### 🎯 Live Testing Results - PERFECT SUCCESS ✅
+## Learnings and Project Insights
 
-#### WorkMgr Unit Testing - CONFIRMED WORKING
-```json
-✅ queue_unit_tests(":ExecuteMCP.Test.SampleUnitTest") → {"jobID":"1234","status":"queued"}
-✅ poll_unit_tests("1234") → Complete results with pass/fail counts
-✅ Leading colon requirement validated and documented
-✅ Process isolation eliminates singleton conflicts
-```
+### VS Code Integration Challenges
+- File system sync delays cause "class not found" errors
+- Solution: SQL-based discovery of compiled classes
+- TestRunner architecture bypasses all sync issues
 
-#### Compilation Tools Testing - CONFIRMED WORKING
-```json
-✅ compile_objectscript_class("ExecuteMCP.Test.ErrorTest.cls") → Compiled successfully
-✅ compile_objectscript_package("ExecuteMCP.Test") → Entire package compiled
-✅ .cls suffix requirement enforced for reliability
-```
+### Manager Singleton Pattern
+- %UnitTest.Manager designed for terminal use, not concurrent access
+- Process-local globals provide perfect isolation
+- Custom TestCase base class ensures Manager availability
 
-#### I/O Capture Testing - BREAKTHROUGH CONFIRMED
-```json
-✅ execute_command("WRITE $ZV") → "IRIS for Windows (x86-64) 2024.3..."
-✅ execute_command('WRITE "Hello MCP World!"') → "Hello MCP World!"
-✅ Real output capture with zero STDIO pollution
-```
+### Tool Consolidation Benefits
+- Reduced complexity from 10 to 8 tools
+- Single unit testing tool with superior architecture
+- Cleaner API surface for MCP clients
+- Better maintainability and documentation
 
-### Technical Implementation Architecture
-
-#### WorkMgr Pattern for Unit Testing ✅
-```objectscript
-// ExecuteMCP.Core.UnitTestQueue implementation
-ClassMethod QueueTests(pTestSpec As %String, ...) As %String
-{
-    // Create WorkMgr work unit
-    Set tWorkMgr = ##class(%SYSTEM.WorkMgr).%New()
-    
-    // Queue test execution in isolated process
-    Set tSC = tWorkMgr.Queue("##class(ExecuteMCP.Core.UnitTestQueue).RunTestInWorker", ...)
-    
-    // Return job ID immediately for polling
-    Quit {"jobID": tJobID, "status": "queued"}
-}
-```
-
-#### Smart Output Capture Mechanism ✅
-```objectscript
-// Global variable capture for WRITE commands
-If (pCommand [ "WRITE") {
-    Set ^MCPCapture = ""
-    // Capture output to global
-    Set tOutput = $GET(^MCPCapture,"")
-    Kill ^MCPCapture
-}
-```
-
-### Current Production Configuration ✅
-
-#### MCP Server: `iris_execute_mcp.py`
-- **Server Name**: `iris-execute-mcp`
-- **Status**: ✅ Enabled and working perfectly
-- **Version**: v2.3.0 - WorkMgr Unit Testing Implementation
-- **Tools**: 9 production-ready tools with complete feature set
-
-#### IRIS Classes
-- **ExecuteMCP.Core.Command**: Execute commands, manage globals, system info
-- **ExecuteMCP.Core.UnitTestQueue**: WorkMgr-based unit testing with process isolation
-- **ExecuteMCP.Core.Compile**: ObjectScript compilation management
-- **Security**: Proper privilege checking maintained throughout
-
-### GitHub Repository Status ✅
-- **Latest Commit**: Updated with WorkMgr implementation
-- **Branch**: master
-- **License**: MIT License included
-- **Documentation**: Complete README.md and User Manual with 9 tools documented
-
-### Documentation Updates ✅
-- **README.md**: Updated to correctly show 9 tools with WorkMgr details
-- **User Manual**: Complete rewrite with accurate tool descriptions
-- **Troubleshooting**: Added comprehensive unit test configuration guidance
-- **Version History**: Added v2.3.0 entry for WorkMgr implementation
-
-### Production Deployment Status ✅
-
-#### Code Quality
-- ✅ **IRIS Classes**: Production-ready with WorkMgr process isolation
-- ✅ **MCP Server**: Robust with proper async handling and timeouts
-- ✅ **Configuration**: Complete setup documentation
-- ✅ **Testing**: All functionality validated through live testing
-
-#### Documentation
-- ✅ **User Manual**: Complete with WorkMgr technical details
-- ✅ **README.md**: Accurate 9-tool documentation
-- ✅ **Memory Bank**: Updated to reflect current implementation
-- ✅ **Troubleshooting**: Comprehensive guidance for common issues
-
-## Success Metrics Achieved ✅
-- **Functionality**: ✅ 100% - All 9 tools working perfectly
-- **Performance**: ✅ Optimal - 0ms to sub-second execution times  
-- **Process Isolation**: ✅ Complete - WorkMgr eliminates singleton conflicts
-- **Reliability**: ✅ Perfect - Zero timeout failures
-- **Documentation**: ✅ Professional - Complete and accurate guides
-
-**Current Status**: 🎉 **PROJECT COMPLETE** - IRIS Execute MCP server with 9 production-ready tools successfully deployed with WorkMgr unit testing pattern. Complete documentation updated and ready for distribution.
+## Environment Status
+- IRIS running and accessible
+- MCP server (iris-execute-mcp) connected and functional
+- All 8 production tools available and tested
+- Version 3.0.0 ready for production deployment

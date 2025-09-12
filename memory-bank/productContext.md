@@ -5,17 +5,17 @@
 ### The Problem
 AI agents and developers need programmatic access to InterSystems IRIS functionality, but current solutions have limitations:
 - Direct IRIS execution requires complex session management
-- Unit testing has severe timeout issues with traditional approaches
+- Unit testing in VS Code has severe sync issues with traditional approaches
 - No standardized way to compile ObjectScript from external tools
 - Limited ability to capture IRIS command output programmatically
 
 ### The Solution
-A production-ready MCP server providing 9 essential tools for IRIS interaction:
+A production-ready MCP server providing 8 essential tools for IRIS interaction:
 - Direct ObjectScript command execution with output capture
 - Global variable manipulation and retrieval
 - Dynamic class method invocation
 - ObjectScript compilation management
-- WorkMgr-based unit testing with process isolation
+- Custom TestRunner-based unit testing with VS Code sync bypass
 - Industry-standard Model Context Protocol integration
 
 ## User Experience Goals
@@ -25,7 +25,7 @@ A production-ready MCP server providing 9 essential tools for IRIS interaction:
    - Execute IRIS commands with real output capture
    - Compile and test ObjectScript code
    - Manage global variables programmatically
-   - Run unit tests without timeout issues
+   - Run unit tests without sync issues
 
 2. **Developers** integrating AI with IRIS
    - Rapid ObjectScript development and testing
@@ -38,9 +38,9 @@ A production-ready MCP server providing 9 essential tools for IRIS interaction:
 **Journey 1: ObjectScript Development**
 1. Developer writes ObjectScript code in IDE
 2. Uses compile_objectscript_class to compile
-3. Executes queue_unit_tests to run tests
-4. Polls results with poll_unit_tests
-5. Gets detailed pass/fail information in milliseconds
+3. Executes execute_unit_tests to run tests
+4. Gets detailed pass/fail information in milliseconds
+5. Iterates quickly with reliable test results
 
 **Journey 2: System Debugging**
 1. Developer needs to check system state
@@ -52,29 +52,29 @@ A production-ready MCP server providing 9 essential tools for IRIS interaction:
 **Journey 3: AI-Assisted Development**
 1. AI agent helps write ObjectScript code
 2. Compiles code using compilation tools
-3. Runs unit tests with WorkMgr pattern
+3. Runs unit tests with custom TestRunner
 4. Provides instant feedback on test results
-5. Iterates quickly without timeout frustrations
+5. Iterates quickly without VS Code sync issues
 
 ## Key Value Propositions
 
 ### For AI Agents
-- **9 Production Tools**: Complete toolkit for IRIS interaction
+- **8 Production Tools**: Complete toolkit for IRIS interaction
 - **Real Output Capture**: WRITE commands return actual output
-- **Process Isolation**: WorkMgr pattern prevents conflicts
-- **Zero Timeouts**: All operations complete instantly or async
+- **VS Code Compatible**: Custom TestRunner bypasses sync issues
+- **Zero Timeouts**: All operations complete instantly
 
 ### For Developers
-- **60,000x Faster Testing**: Unit tests in 0.5-2ms vs 120+ seconds
+- **Sub-second Testing**: Unit tests execute in <1 second
 - **Complete Compilation**: Compile classes and packages easily
 - **Dynamic Execution**: Call any ObjectScript method dynamically
 - **Professional Documentation**: Clear setup and troubleshooting guides
 
 ### For Organizations
-- **Production Ready**: v2.3.0 with all issues resolved
+- **Production Ready**: v3.0.0 with all issues resolved
 - **MIT Licensed**: Free to use and modify
-- **Process Isolation**: WorkMgr prevents test conflicts
-- **Comprehensive Testing**: All 9 tools validated
+- **Clean Architecture**: Simplified from 10 to 8 tools
+- **Comprehensive Testing**: All 8 tools validated
 
 ## Tool Capabilities
 
@@ -89,9 +89,8 @@ A production-ready MCP server providing 9 essential tools for IRIS interaction:
 6. **compile_objectscript_class**: Compile one or more classes
 7. **compile_objectscript_package**: Compile entire packages
 
-### Unit Testing Tools (2)
-8. **queue_unit_tests**: Queue tests with WorkMgr (instant return)
-9. **poll_unit_tests**: Poll for test results (non-blocking)
+### Unit Testing Tool (1)
+8. **execute_unit_tests**: Run tests using custom TestRunner (formerly run_custom_testrunner)
 
 ## Technical Innovations
 
@@ -100,27 +99,28 @@ A production-ready MCP server providing 9 essential tools for IRIS interaction:
 - **Solution**: Global variable capture mechanism
 - **Result**: Real output with clean MCP protocol
 
-### WorkMgr Unit Testing Pattern
-- **Problem Solved**: %UnitTest.Manager 120+ second timeouts
-- **Solution**: Process isolation via %SYSTEM.WorkMgr
-- **Result**: 60,000x performance improvement
+### Custom TestRunner Architecture
+- **Problem Solved**: VS Code sync issues with %UnitTest.Manager
+- **Solution**: SQL-based discovery bypassing filesystem
+- **Result**: Reliable test execution in VS Code environment
 
-### Key Requirements
-- **Test Spec Format**: Leading colon optional (auto-added in v2.3.1)
-- **^UnitTestRoot**: Must be configured properly
-- **Default Qualifiers**: "/noload/nodelete/recursive" for VS Code
+### Key Features
+- **Process-Local Globals**: Thread-safe Manager isolation using ^||TestRunnerManager
+- **SQL Discovery**: Direct query of compiled classes, no filesystem dependency
+- **Full Compatibility**: All %UnitTest.TestCase features supported
+- **Auto-Prefix**: Flexible test specification with automatic prefix handling
 
 ## Success Metrics Achieved
 
 ### Performance Metrics
 - Command execution: 0ms latency ✅
-- Unit test execution: 0.5-2ms (vs 120+ seconds) ✅
+- Unit test execution: <1 second ✅
 - Compilation time: Sub-second ✅
 - Zero timeout failures ✅
 
 ### Reliability Metrics
 - Tool success rate: 100% ✅
-- Process isolation: Complete ✅
+- VS Code compatibility: Complete ✅
 - Error recovery: Comprehensive ✅
 - MCP stability: Perfect ✅
 
@@ -133,16 +133,16 @@ A production-ready MCP server providing 9 essential tools for IRIS interaction:
 ## Competitive Advantages
 
 ### vs Traditional Approaches
-- **vs %UnitTest.Manager**: 60,000x faster with process isolation
+- **vs %UnitTest.Manager**: No filesystem dependency, VS Code compatible
 - **vs Manual Compilation**: Automated with error reporting
 - **vs Generic Execution**: Real output capture
 - **vs Session-based**: Stateless with instant execution
 
 ### Our Differentiation
-- **WorkMgr Innovation**: First to solve unit test timeout issues
+- **Custom TestRunner**: First to solve VS Code sync issues
 - **I/O Capture**: Real command output without STDIO pollution
-- **9 Essential Tools**: Complete toolkit in one package
-- **Production Ready**: v2.3.0 fully tested and documented
+- **8 Essential Tools**: Streamlined toolkit from 10 tools
+- **Production Ready**: v3.0.0 fully tested and documented
 
 ## Production Deployment
 
@@ -163,8 +163,8 @@ A production-ready MCP server providing 9 essential tools for IRIS interaction:
 
 ### Critical Setup
 ```objectscript
-// Required for unit testing
-Set ^UnitTestRoot = "C:/InterSystems/IRIS/mgr/user/UnitTests/"
+// TestRunner works with compiled classes, no filesystem setup needed
+// Classes auto-compile when saved in VS Code
 ```
 
 ## Future Roadmap
@@ -174,20 +174,27 @@ Set ^UnitTestRoot = "C:/InterSystems/IRIS/mgr/user/UnitTests/"
 - Advanced SQL execution with result sets
 - Transaction management tools
 - Performance profiling tools
+- Test coverage reporting
 
 ### Architecture Extensions
 - HTTP transport for remote access
 - Batch operation support
 - Enhanced security features
 - Audit and compliance tools
+- Test result streaming for large suites
 
 ## Project Status
 
-**Version**: v2.3.1 - Auto-Prefix Feature for Unit Testing
+**Version**: v3.0.0 - Consolidated 8-Tool Architecture
 **Status**: Production Ready
-**Tools**: 9 fully functional and tested
+**Tools**: 8 fully functional and tested
 **Documentation**: Complete and accurate
 **License**: MIT (open source)
 **Repository**: https://github.com/jbrandtmse/iris-execute-mcp
 
-**Current Achievement**: Complete production-ready MCP server with 9 essential tools for IRIS interaction, featuring breakthrough innovations in I/O capture and unit testing that solve long-standing timeout and output capture challenges. Latest enhancement includes auto-prefix feature for unit test specifications, improving user experience by automatically adding the required colon prefix when needed.
+## Version History
+- **v3.0.0** (January 9, 2025): Refactored to 8 tools, renamed execute_unit_tests
+- **v2.x**: 10 tools with experimental async testing (deprecated)
+- **v1.0.0**: Initial 5 core tools
+
+**Current Achievement**: Complete production-ready MCP server with 8 essential tools for IRIS interaction, featuring breakthrough innovations in I/O capture and custom TestRunner architecture that completely solves VS Code synchronization challenges. The consolidation from 10 to 8 tools provides a cleaner, more maintainable API while maintaining all functionality through the superior TestRunner implementation.

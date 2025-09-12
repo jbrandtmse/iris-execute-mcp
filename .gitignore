@@ -16,6 +16,7 @@ src/%Api/
 src/%Atelier/
 src/%UnitTest/
 vscode-objectscript-master/
+src/%*
 
 # Python
 __pycache__/

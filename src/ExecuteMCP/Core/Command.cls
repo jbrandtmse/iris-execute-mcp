@@ -98,7 +98,7 @@ ClassMethod ExecuteCommand(pCommand As %String, pNamespace As %String = "HSCUSTO
                     
                     // Extract the WRITE argument
                     Set tWriteArg = $EXTRACT(pCommand, tStartWrite, tEndWrite)
-                    Set tWriteArg = $ZSTRIP(tWriteArg, "<>W")
+                    Set tWriteArg = $ZSTRIP(tWriteArg, "<>", " ")
                     
                     // Add modified WRITE that captures to global
                     If tModifiedCommand '= "" {

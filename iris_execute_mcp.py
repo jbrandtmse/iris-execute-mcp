@@ -376,10 +376,8 @@ def execute_unit_tests(test_spec: str, namespace: str = "HSCUSTOM") -> str:
     """
     Execute unit tests using the custom ExecuteMCP.TestRunner.
     
-    This custom TestRunner bypasses VS Code sync issues by executing tests from
-    already-compiled packages rather than loading from the filesystem. It maintains
-    full compatibility with %UnitTest.TestCase and assertion macros while providing
-    more flexibility and eliminating file path dependencies.
+    Uses DirectTestRunner which bypasses complex %UnitTest.Manager infrastructure
+    to avoid timeout issues while maintaining assertion compatibility.
     
     Args:
         test_spec: Test specification (package, class, or class:method)
@@ -396,16 +394,17 @@ def execute_unit_tests(test_spec: str, namespace: str = "HSCUSTOM") -> str:
         - executionTime: Total time taken
         - status: Overall execution status
     """
-    logger.info(f"Running custom TestRunner: {test_spec} in namespace {namespace}")
+    logger.info(f"Running DirectTestRunner for: {test_spec} in namespace {namespace}")
     
     try:
-        # Call the custom TestRunner's RunTestSpec method
+        # Call DirectTestRunner.RunTests with the test spec directly
+        # DirectTestRunner handles all the complex object creation internally
+        logger.info("Calling DirectTestRunner.RunTests")
         result = call_iris_with_timeout(
-            "ExecuteMCP.TestRunner.Manager",
-            "RunTestSpec",
+            "ExecuteMCP.Core.DirectTestRunner",
+            "RunTests",  # Correct method name
             30.0,  # 30 second timeout for test execution
-            test_spec,
-            namespace
+            test_spec  # DirectTestRunner.RunTests only takes the test spec parameter
         )
         
         # Parse result to ensure it's valid JSON

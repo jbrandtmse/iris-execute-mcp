@@ -3,71 +3,45 @@
 Class ExecuteMCP.TestRunner.TestCase Extends %UnitTest.TestCase
 {
 
-/// Override %OnNew to initialize Manager from a global variable
-/// This allows our TestRunner to provide the Manager context
+/// Override %OnNew to pass Manager from global to parent constructor
+/// The Manager property in %UnitTest.TestCase is PRIVATE and can only be set via constructor
 Method %OnNew(initvalue As %String = "") As %Status
 {
     Set tSC = $$$OK
     Try {
-        ; Call parent constructor first
-        Set tSC = ##super(initvalue)
-        If $$$ISERR(tSC) Quit
+        ; Determine which Manager to use
+        Set tManager = initvalue
         
-        ; Check if TestRunner has set a Manager in the global
-        If $DATA(^||TestRunnerManager) {
-            ; Use the Manager provided by TestRunner
-            Set ..Manager = ^||TestRunnerManager
-        }
-        ElseIf $DATA(^TestRunnerManager) {
-            ; Fallback to standard global if process-private not available
-            Set ..Manager = ^TestRunnerManager
-        }
-        Else {
-            ; Create a default Manager if none provided
-            ; This ensures assertions won't fail with INVALID OREF
-            Set ..Manager = ##class(ExecuteMCP.TestRunner.Manager).%New()
-        }
-    }
-    Catch ex {
-        Set tSC = ex.AsStatus()
-    }
-    Quit tSC
-}
-
-/// Helper method to ensure Manager is available
-Method EnsureManager() As %Status
-{
-    Set tSC = $$$OK
-    Try {
-        If '$ISOBJECT(..Manager) {
-            ; Try to get Manager from globals
+        ; If no Manager provided, check globals
+        If '$ISOBJECT(tManager) {
             If $DATA(^||TestRunnerManager) {
-                Set ..Manager = ^||TestRunnerManager
+                ; Use the Manager provided by TestRunner (process-local)
+                Set tManager = ^||TestRunnerManager
             }
             ElseIf $DATA(^TestRunnerManager) {
-                Set ..Manager = ^TestRunnerManager
+                ; Fallback to standard global if process-private not available
+                Set tManager = ^TestRunnerManager
             }
             Else {
-                ; Create default Manager
-                Set ..Manager = ##class(ExecuteMCP.TestRunner.Manager).%New()
+                ; Create a default Manager if none provided
+                ; This ensures assertions won't fail with INVALID OREF
+                Set tManager = ##class(ExecuteMCP.TestRunner.Manager).%New()
+                
+                ; Also set up a basic Context for the Manager
+                Set tContext = ##class(ExecuteMCP.TestRunner.Context).%New()
+                Set tManager.Context = tContext
             }
         }
+        
+        ; CRITICAL: Pass the Manager to parent constructor
+        ; The parent %OnNew sets the private r%Manager property
+        Set tSC = ##super(tManager)
+        If $$$ISERR(tSC) Quit
     }
     Catch ex {
         Set tSC = ex.AsStatus()
     }
     Quit tSC
-}
-
-/// Override OnBeforeOneTest to ensure Manager is set
-Method OnBeforeOneTest(testname As %String) As %Status
-{
-    ; Ensure Manager is available before test execution
-    Set tSC = ..EnsureManager()
-    If $$$ISERR(tSC) Quit tSC
-    
-    ; Call parent implementation if it exists
-    Quit ##super(testname)
 }
 
 }

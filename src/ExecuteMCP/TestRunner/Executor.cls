@@ -27,11 +27,10 @@ Method ExecuteTestMethod(pTestClass As %String, pMethodName As %String) As %Stat
         ; This allows our custom TestCase base class to pick it up in %OnNew
         Set ^||TestRunnerManager = ..Manager
         
-        ; Create instance of test class using XECUTE for dynamic instantiation
-        ; This avoids $CLASSMETHOD issues with %New
+        ; Create instance of test class using $CLASSMETHOD for dynamic instantiation
+        ; Pass the Manager from global to constructor as required by %UnitTest.TestCase
         Set tTestInstance = ""
-        Set tCreateCmd = "Set tTestInstance = ##class("_pTestClass_").%New("""")"
-        XECUTE tCreateCmd
+        Set tTestInstance = $CLASSMETHOD(pTestClass, "%New", ^||TestRunnerManager)
         
         If '$ISOBJECT(tTestInstance) {
             Set tSC = $$$ERROR($$$GeneralError, "Failed to create instance of "_pTestClass)
@@ -134,9 +133,10 @@ Method ExecuteTestClass(pTestClass As %String) As %Status
         
         ; Check if we need to call OnAfterAllTests
         ; This is a simplified check - in production would track properly
+        ; CRITICAL: Set Manager in global before creating instance
+        Set ^||TestRunnerManager = ..Manager
         Set tTestInstance = ""
-        Set tCreateCmd = "Set tTestInstance = ##class("_pTestClass_").%New("""")"
-        XECUTE tCreateCmd
+        Set tTestInstance = $CLASSMETHOD(pTestClass, "%New", ^||TestRunnerManager)
         
         If $ISOBJECT(tTestInstance) {
             If ##class(%Dictionary.CompiledMethod).%ExistsId(pTestClass_"||OnAfterAllTests") {

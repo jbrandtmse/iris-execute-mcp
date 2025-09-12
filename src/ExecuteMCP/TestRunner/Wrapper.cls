@@ -3,6 +3,33 @@
 Class ExecuteMCP.TestRunner.Wrapper Extends %RegisteredObject
 {
 
+/// Run tests using spec passed via global to avoid Native API parameter issues
+ClassMethod RunTestFromGlobal() As %String
+{
+    Try {
+        ; Get test spec from global (set by MCP server)
+        Set tSpec = $GET(^ExecuteMCP.TestSpec, "")
+        Set tNamespace = $GET(^ExecuteMCP.TestNamespace, "HSCUSTOM")
+        
+        ; Clear the globals after reading
+        Kill ^ExecuteMCP.TestSpec
+        Kill ^ExecuteMCP.TestNamespace
+        
+        If tSpec = "" {
+            Return "{""error"":""No test spec provided in ^ExecuteMCP.TestSpec""}"
+        }
+        
+        ; Log the spec we're about to run
+        Set ^ExecuteMCP.TestDebug = "Running spec: "_tSpec_" in namespace: "_tNamespace
+        
+        ; Call the TestRunner directly with string parameters
+        Return ##class(ExecuteMCP.TestRunner.Manager).RunTestSpec(tSpec, tNamespace)
+    }
+    Catch ex {
+        Return "{""error"":"""_$ZCONVERT(ex.DisplayString(), "O", "JS")_"""}"
+    }
+}
+
 /// Debug method with hardcoded test spec to bypass parameter issues
 ClassMethod RunTestDebug() As %String
 {
@@ -80,9 +107,10 @@ ClassMethod GetUsageInstructions() As %String
 {
     Set tInstructions = {}
     Set tInstructions.problem = "Native API parameter marshaling converts strings to object references"
-    Set tInstructions.solution = "Use execute_classmethod to call Wrapper methods"
+    Set tInstructions.solution = "Use execute_classmethod to call Wrapper methods or set globals"
     
     Set tInstructions.availableMethods = []
+    Do tInstructions.availableMethods.%Push("RunTestFromGlobal - Reads spec from ^ExecuteMCP.TestSpec global")
     Do tInstructions.availableMethods.%Push("RunTestDebug - Runs ExecuteMCP.Test.SimpleTest:TestCalculations")
     Do tInstructions.availableMethods.%Push("RunSimpleTest - Runs all tests in ExecuteMCP.Test.SimpleTest")
     Do tInstructions.availableMethods.%Push("RunErrorTest - Runs all tests in ExecuteMCP.Test.ErrorTest")
@@ -94,6 +122,10 @@ ClassMethod GetUsageInstructions() As %String
     Set tInstructions.example.className = "ExecuteMCP.TestRunner.Wrapper"
     Set tInstructions.example.methodName = "RunSimpleTest"
     Set tInstructions.example.namespace = "HSCUSTOM"
+    
+    Set tInstructions.globalApproach = {}
+    Set tInstructions.globalApproach.step1 = "Set ^ExecuteMCP.TestSpec = ""ExecuteMCP.Test.SimpleTest"""
+    Set tInstructions.globalApproach.step2 = "Call RunTestFromGlobal()"
     
     Return tInstructions.%ToJSON()
 }

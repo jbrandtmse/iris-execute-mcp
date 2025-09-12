@@ -1,98 +1,207 @@
-Class ExecuteMCP.TestRunner.Debug
+/// Debug utilities for TestRunner diagnostics
+Class ExecuteMCP.TestRunner.Debug Extends %RegisteredObject
 {
 
-ClassMethod TestManagerInjection() As %String
+/// Test the Manager passing pattern
+ClassMethod TestManagerPassingPattern() As %String
 {
-    Set result = {}
-    Set result.steps = []
-    
     Try {
-        ; Step 1: Create Manager instance
-        Do result.steps.%Push("Creating Manager instance")
-        Set tManager = ##class(ExecuteMCP.TestRunner.Manager).%New()
-        Do result.steps.%Push("Manager created: "_$ISOBJECT(tManager))
+        Set result = {}
         
-        ; Step 2: Create test instance
-        Do result.steps.%Push("Creating test instance")
-        Set tTestInstance = ##class(ExecuteMCP.Test.SimpleTest).%New("")
-        Do result.steps.%Push("Test instance created: "_$ISOBJECT(tTestInstance))
+        ; Create Manager instance
+        Set manager = ##class(ExecuteMCP.TestRunner.Manager).%New()
+        Set result.managerCreated = $ISOBJECT(manager)
+        Set result.managerOID = manager.%Oid()
         
-        ; Step 3: Inject Manager
-        Do result.steps.%Push("Injecting Manager property")
-        Set tTestInstance.Manager = tManager
-        Do result.steps.%Push("Manager injected: "_$ISOBJECT(tTestInstance.Manager))
+        ; Test 1: Direct pass to TestCase
+        Set testInstance = ##class(ExecuteMCP.Test.SimpleTest).%New(manager)
+        Set result.testCreatedWithManager = $ISOBJECT(testInstance)
         
-        ; Step 4: Try to call a test method with assertion
-        Do result.steps.%Push("Calling test method")
-        Set tSC = tTestInstance.TestAlwaysPass()
-        Do result.steps.%Push("Test method called: "_$$$ISOK(tSC))
+        ; Check if Manager property is accessible
+        Try {
+            ; The Manager property is PRIVATE in %UnitTest.TestCase
+            ; We can't access it directly, but we can test if assertions work
+            Set assertResult = testInstance.AssertEquals(1, 1, "Test assertion")
+            Set result.assertionWorks = 1
+        }
+        Catch ex {
+            Set result.assertionError = ex.DisplayString()
+        }
         
-        Set result.success = 1
+        Return result.%ToJSON()
     }
     Catch ex {
-        Set result.error = ex.DisplayString()
-        Set result.success = 0
+        Return "{""error"":"""_$ZCONVERT(ex.DisplayString(), "O", "JS")_"""}"
     }
-    
-    Return result.%ToJSON()
 }
 
-ClassMethod TestAssertionMacro() As %String
+/// Test direct instantiation with Manager
+ClassMethod TestDirectInstantiation() As %String
 {
-    Set result = {}
-    
     Try {
-        ; Create Manager and Context
-        Set tManager = ##class(ExecuteMCP.TestRunner.Manager).%New()
-        Set tManager.Context = ##class(ExecuteMCP.TestRunner.Context).%New()
+        Set result = {}
         
-        ; Create test instance and inject Manager
-        Set tTestInstance = ##class(ExecuteMCP.Test.SimpleTest).%New("")
-        Set tTestInstance.Manager = tManager
+        ; Create Manager
+        Set manager = ##class(ExecuteMCP.TestRunner.Manager).%New()
+        Set result.managerCreated = 1
         
-        ; Test direct assertion
-        Do tTestInstance.AssertEquals(1, 1, "Test direct assertion")
+        ; Use $CLASSMETHOD to instantiate with Manager
+        Set className = "ExecuteMCP.Test.SimpleTest"
+        Set testInstance = $CLASSMETHOD(className, "%New", manager)
+        Set result.instanceCreated = $ISOBJECT(testInstance)
         
-        Set result.success = 1
-        Set result.message = "Assertion executed successfully"
+        ; Try to run a test method
+        Try {
+            Do testInstance.TestCalculations()
+            Set result.methodExecuted = 1
+        }
+        Catch ex {
+            Set result.methodError = ex.DisplayString()
+        }
+        
+        Return result.%ToJSON()
     }
     Catch ex {
-        Set result.error = ex.DisplayString()
-        Set result.location = ex.Location
-        Set result.code = ex.Code
-        Set result.success = 0
+        Return "{""error"":"""_$ZCONVERT(ex.DisplayString(), "O", "JS")_"""}"
     }
-    
-    Return result.%ToJSON()
 }
 
-ClassMethod TestManagerLogAssert() As %String
+/// Test if Manager is being passed as object or string
+ClassMethod DiagnoseParameterType() As %String
 {
-    Set result = {}
-    
     Try {
-        ; Create Manager with Context
-        Set tManager = ##class(ExecuteMCP.TestRunner.Manager).%New()
-        Set tContext = ##class(ExecuteMCP.TestRunner.Context).%New()
-        Set tManager.Context = tContext
+        Set result = {}
         
-        ; Test LogAssert directly
-        Do result.steps.%Push("Testing LogAssert method")
-        Do tManager.LogAssert(1, "test", "Testing LogAssert")
-        Do result.steps.%Push("LogAssert called successfully")
+        ; Create Manager
+        Set manager = ##class(ExecuteMCP.TestRunner.Manager).%New()
         
-        ; Get context results
-        Set tResults = tContext.GetResults()
-        Set result.contextResults = tResults
+        ; Store in global (this will serialize it)
+        Set ^TestRunnerManager = manager
         
-        Set result.success = 1
+        ; Check what's in the global
+        Set globalValue = ^TestRunnerManager
+        Set result.globalIsObject = $ISOBJECT(globalValue)
+        Set result.globalValue = globalValue
+        
+        ; Now test direct pass
+        Set result.managerIsObject = $ISOBJECT(manager)
+        Set result.managerOID = manager.%Oid()
+        
+        ; Clean up
+        Kill ^TestRunnerManager
+        
+        Return result.%ToJSON()
     }
     Catch ex {
-        Set result.error = ex.DisplayString()
-        Set result.success = 0
+        Return "{""error"":"""_$ZCONVERT(ex.DisplayString(), "O", "JS")_"""}"
     }
-    
-    Return result.%ToJSON()
+}
+
+/// Debug the TestCase constructor behavior
+ClassMethod DebugTestCaseConstructor() As %String
+{
+    Try {
+        Set result = {}
+        
+        ; Create Manager
+        Set manager = ##class(ExecuteMCP.TestRunner.Manager).%New()
+        Set result.step1 = "Manager created"
+        
+        ; Test different parameter types
+        Set result.tests = []
+        
+        ; Test 1: Pass Manager object directly
+        Set test1 = {}
+        Set test1.type = "Direct Manager object"
+        Try {
+            Set instance1 = ##class(ExecuteMCP.Test.SimpleTest).%New(manager)
+            Set test1.success = $ISOBJECT(instance1)
+        }
+        Catch ex {
+            Set test1.error = ex.DisplayString()
+        }
+        Do result.tests.%Push(test1)
+        
+        ; Test 2: Pass empty string
+        Set test2 = {}
+        Set test2.type = "Empty string"
+        Try {
+            Set instance2 = ##class(ExecuteMCP.Test.SimpleTest).%New("")
+            Set test2.success = $ISOBJECT(instance2)
+        }
+        Catch ex {
+            Set test2.error = ex.DisplayString()
+        }
+        Do result.tests.%Push(test2)
+        
+        ; Test 3: Pass nothing
+        Set test3 = {}
+        Set test3.type = "No parameter"
+        Try {
+            Set instance3 = ##class(ExecuteMCP.Test.SimpleTest).%New()
+            Set test3.success = $ISOBJECT(instance3)
+        }
+        Catch ex {
+            Set test3.error = ex.DisplayString()
+        }
+        Do result.tests.%Push(test3)
+        
+        Return result.%ToJSON()
+    }
+    Catch ex {
+        Return "{""error"":"""_$ZCONVERT(ex.DisplayString(), "O", "JS")_"""}"
+    }
+}
+
+/// Test complete flow with simplified Manager approach
+ClassMethod TestSimplifiedFlow() As %String
+{
+    Try {
+        Set result = {}
+        Set result.timestamp = $ZDATETIME($NOW(), 3)
+        
+        ; Create Manager
+        Set manager = ##class(ExecuteMCP.TestRunner.Manager).%New()
+        Set result.managerCreated = 1
+        
+        ; Initialize Context
+        If '$ISOBJECT(manager.Context) {
+            Set manager.Context = ##class(ExecuteMCP.TestRunner.Context).%New()
+        }
+        Set manager.Context.StartTime = $ZTIMESTAMP
+        
+        ; Start test class
+        Do manager.Context.StartClass("ExecuteMCP.Test.SimpleTest")
+        
+        ; Create test instance with Manager
+        Set testInstance = ##class(ExecuteMCP.Test.SimpleTest).%New(manager)
+        Set result.testInstanceCreated = $ISOBJECT(testInstance)
+        
+        ; Run a simple test method
+        Do manager.Context.StartMethod("TestCalculations")
+        
+        Set methodStatus = $$$OK
+        Try {
+            Do testInstance.TestCalculations()
+            Set result.testExecuted = 1
+        }
+        Catch ex {
+            Set methodStatus = ex.AsStatus()
+            Set result.testError = ex.DisplayString()
+        }
+        
+        Do manager.Context.EndMethod(methodStatus)
+        Do manager.Context.EndClass()
+        
+        ; Get results
+        Set manager.Context.EndTime = $ZTIMESTAMP
+        Set result.results = manager.Context.GetResults()
+        
+        Return result.%ToJSON()
+    }
+    Catch ex {
+        Return "{""error"":"""_$ZCONVERT(ex.DisplayString(), "O", "JS")_"""}"
+    }
 }
 
 }

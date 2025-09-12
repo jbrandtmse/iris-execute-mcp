@@ -1,6 +1,6 @@
 /// ExecuteMCP.TestRunner.Manager - Main orchestrator and test execution manager
-/// Provides LogAssert interface for %UnitTest.TestCase compatibility
-Class ExecuteMCP.TestRunner.Manager Extends %RegisteredObject
+/// Extends %UnitTest.Manager for full compatibility with %UnitTest.TestCase
+Class ExecuteMCP.TestRunner.Manager Extends %UnitTest.Manager
 {
 
 /// Test execution context (explicitly public for external access)
@@ -203,22 +203,17 @@ Method ExecuteTestManifest(pManifest As %DynamicObject, pFilter As %String = "")
             Set tSC = ..Context.StartClass(tClassName)
             If $$$ISERR(tSC) Continue
             
-            ; Create test instance with proper initialization
-            ; %UnitTest.TestCase expects an initvalue parameter
+            ; Create test instance using $CLASSMETHOD for dynamic instantiation
+            ; Pass $THIS (the Manager instance) to the constructor as required by %UnitTest.TestCase
+            Set tTestInstance = ""
             Try {
-                ; Pass empty string as initvalue to satisfy %UnitTest.TestCase constructor
-                Set tTestInstance = $CLASSMETHOD(tClassName, "%New", "")
+                ; Use $CLASSMETHOD with Manager parameter (tested and working)
+                Set tTestInstance = $CLASSMETHOD(tClassName, "%New", $THIS)
             }
-            Catch {
-                ; If that fails, try without parameter
-                Try {
-                    Set tTestInstance = $CLASSMETHOD(tClassName, "%New")
-                }
-                Catch exNew {
-                    Do ..Context.AddMessage("Failed to create instance of "_tClassName_": "_exNew.DisplayString())
-                    Do ..Context.EndClass()
-                    Continue
-                }
+            Catch exNew {
+                Do ..Context.AddMessage("Failed to create instance of "_tClassName_": "_exNew.DisplayString())
+                Do ..Context.EndClass()
+                Continue
             }
             
             If '$ISOBJECT(tTestInstance) {
@@ -311,8 +306,8 @@ Method ExecuteTestManifest(pManifest As %DynamicObject, pFilter As %String = "")
     Quit tSC
 }
 
-/// LogAssert interface for assertion macros - CRITICAL for compatibility
-Method LogAssert(pSuccess As %Boolean, pAction As %String, pDescription As %String = "") As %Boolean
+/// Override LogAssert from %UnitTest.Manager - CRITICAL for compatibility
+Method LogAssert(success, action, description, extra, location)
 {
     ; Ensure Context is initialized
     If '$ISOBJECT(..Context) {
@@ -320,14 +315,14 @@ Method LogAssert(pSuccess As %Boolean, pAction As %String, pDescription As %Stri
     }
     
     ; Add assertion to context
-    Do ..Context.AddAssertion(pSuccess, pAction, pDescription)
+    Do ..Context.AddAssertion(success, action, description)
     
     ; Return success value (important for macro behavior)
-    Return pSuccess
+    Return success
 }
 
-/// LogMessage interface for test output
-Method LogMessage(pMessage As %String) As %Boolean
+/// Override LogMessage from %UnitTest.Manager for test output
+Method LogMessage(message, location)
 {
     ; Ensure Context is initialized
     If '$ISOBJECT(..Context) {
@@ -335,7 +330,7 @@ Method LogMessage(pMessage As %String) As %Boolean
     }
     
     ; Add message to context
-    Do ..Context.AddMessage(pMessage)
+    Do ..Context.AddMessage(message)
     
     Return 1
 }

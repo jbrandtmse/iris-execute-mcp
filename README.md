@@ -385,6 +385,7 @@ Contributions welcome! Please ensure:
 MIT License - See LICENSE file for details
 
 ## Version History
+- **v3.1.1** (September 15, 2025): Fixed ObjectScript assertion macro syntax ($$$AssertFalse → $$$AssertNotTrue), integrated Perplexity MCP for AI-powered research
 - **v3.1.0** (January 11, 2025): DirectTestRunner implementation - 5,700x performance improvement!
 - **v3.0.0** (January 9, 2025): Refactored to 8 development tools, removed deprecated WorkMgr async pattern
 - **v2.4.0** (January 9, 2025): Added custom TestRunner MCP tool (10 tools total)

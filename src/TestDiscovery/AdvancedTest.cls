@@ -15,7 +15,7 @@ Method TestBooleanLogic() As %Status
 {
     Set tSC = $$$OK
     Do $$$AssertTrue(1 && 1, "AND operation test")
-    Do $$$AssertFalse(0 || 0, "OR operation test")
+    Do $$$AssertNotTrue(0 || 0, "OR operation test")
     Quit tSC
 }
 

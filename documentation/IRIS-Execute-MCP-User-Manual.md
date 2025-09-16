@@ -303,13 +303,13 @@ execute_unit_tests("ExecuteMCP.Test.SampleUnitTest:TestAddition")
 ### Prerequisites
 
 1. **InterSystems IRIS Installation**
-   - IRIS 2023.1 or later
+   - IRIS 2024.3 or later
    - Access to a namespace (HSCUSTOM or custom)
    - Compilation permissions for ObjectScript classes
    - `%Development:USE` privilege for XECUTE command execution
 
 2. **Python Environment**
-   - Python 3.8 or later
+   - Python 3.8+
    - pip package manager
    - Virtual environment (recommended)
 
@@ -318,38 +318,38 @@ execute_unit_tests("ExecuteMCP.Test.SampleUnitTest:TestAddition")
    - Cline (VS Code extension) or
    - Any MCP-compatible client
 
-### Step 1: Set Up Virtual Environment
+### Step 1: Clone and Setup
 
-1. **Navigate to your project directory**
-   ```bash
-   cd C:/iris-execute-mcp
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/jbrandtmse/iris-execute-mcp.git
+cd iris-execute-mcp
 
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   ```
+# Create virtual environment
+python -m venv venv
 
-3. **Activate virtual environment**
-   ```bash
-   # Windows
-   venv\Scripts\activate
-   
-   # Linux/macOS  
-   source venv/bin/activate
-   ```
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
 
-4. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-   
-   Required packages:
-   - `intersystems-irispython>=5.0.0` - IRIS Native API for Python
-   - `fastmcp>=0.1.0` - FastMCP library for MCP protocol
-   - `pydantic>=2.0.0` - Data validation
+# Install dependencies
+pip install -r requirements.txt
+```
 
-### Step 2: Install IRIS Components
+### Step 2: Configure Environment
+
+Create a `.env` file (copy from `.env.example`):
+```env
+IRIS_HOSTNAME=localhost
+IRIS_PORT=1972
+IRIS_NAMESPACE=HSCUSTOM
+IRIS_USERNAME=*username*
+IRIS_PASSWORD=*password*
+```
+
+### Step 3: Install IRIS Components
 
 1. **Compile the ObjectScript classes**
    ```objectscript
@@ -371,7 +371,7 @@ execute_unit_tests("ExecuteMCP.Test.SampleUnitTest:TestAddition")
    Write ##class(ExecuteMCP.TestRunner.Executor).RunSpec("ExecuteMCP.Test")
    ```
 
-### Step 3: Validate Python MCP Server
+### Step 4: Validate Python MCP Server
 
 1. **Test server startup**
    ```bash
@@ -419,8 +419,8 @@ execute_unit_tests("ExecuteMCP.Test.SampleUnitTest:TestAddition")
         "IRIS_HOSTNAME": "localhost",
         "IRIS_PORT": "1972", 
         "IRIS_NAMESPACE": "HSCUSTOM",
-        "IRIS_USERNAME": "_SYSTEM",
-        "IRIS_PASSWORD": "_SYSTEM"
+        "IRIS_USERNAME": "*username*",
+        "IRIS_PASSWORD": "*password*"
       },
       "transportType": "stdio"
     }
@@ -446,16 +446,16 @@ execute_unit_tests("ExecuteMCP.Test.SampleUnitTest:TestAddition")
     ],
     "disabled": false,
     "timeout": 60,
+    "type": "stdio",
     "command": "C:/iris-execute-mcp/venv/Scripts/python.exe",
     "args": ["C:/iris-execute-mcp/iris_execute_mcp.py"],
     "env": {
       "IRIS_HOSTNAME": "localhost",
       "IRIS_PORT": "1972",
       "IRIS_NAMESPACE": "HSCUSTOM", 
-      "IRIS_USERNAME": "_SYSTEM",
-      "IRIS_PASSWORD": "_SYSTEM"
-    },
-    "transportType": "stdio"
+      "IRIS_USERNAME": "*username*",
+      "IRIS_PASSWORD": "*password*"
+    }
   }
 }
 ```

@@ -52,8 +52,8 @@ Create a `.env` file (copy from `.env.example`):
 IRIS_HOSTNAME=localhost
 IRIS_PORT=1972
 IRIS_NAMESPACE=HSCUSTOM
-IRIS_USERNAME=_SYSTEM
-IRIS_PASSWORD=_SYSTEM
+IRIS_USERNAME=*username*
+IRIS_PASSWORD=*password*
 ```
 
 ### Step 3: Install IRIS Classes
@@ -99,8 +99,8 @@ Add this to your Cline MCP settings:
       "IRIS_HOSTNAME": "localhost",
       "IRIS_PORT": "1972",
       "IRIS_NAMESPACE": "HSCUSTOM",
-      "IRIS_USERNAME": "_SYSTEM",
-      "IRIS_PASSWORD": "_SYSTEM"
+      "IRIS_USERNAME": "*username*",
+      "IRIS_PASSWORD": "*password*"
     }
   }
 }

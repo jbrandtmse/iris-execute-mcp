@@ -376,6 +376,7 @@ Contributions welcome! Please ensure:
 MIT License - See LICENSE file for details
 
 ## Version History
+- **v3.1.3** (September 15, 2025): Enhanced DirectTestRunner with package-level testing support, cleaned up development files
 - **v3.1.2** (September 15, 2025): Cleaned up duplicate TestManagerCreation() method in Wrapper.cls
 - **v3.1.1** (September 15, 2025): Fixed ObjectScript assertion macro syntax ($$$AssertFalse → $$$AssertNotTrue), integrated Perplexity MCP for AI-powered research
 - **v3.1.0** (January 11, 2025): DirectTestRunner implementation - 5,700x performance improvement!
@@ -395,4 +396,4 @@ MIT License - See LICENSE file for details
 
 ---
 **Status**: ✅ **All 8 tools operational** with DirectTestRunner breakthrough  
-**Last Updated**: January 11, 2025
+**Last Updated**: September 15, 2025

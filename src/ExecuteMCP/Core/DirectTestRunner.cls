@@ -28,47 +28,17 @@ ClassMethod RunTests(pTestSpec As %String, pNamespace As %String = "HSCUSTOM") A
             Set tMethodFilter = ""
         }
         
-        ; For now, just handle single class
-        If $CLASSMETHOD(tClassName, "%Extends", "%UnitTest.TestCase") {
-            ; Get test methods
-            Set tMethods = ..GetTestMethods(tClassName)
-            
-            ; Run each test method directly
-            Set tMethodIter = tMethods.%GetIterator()
-            While tMethodIter.%GetNext(.tKey, .tMethodName) {
-                ; Apply method filter if specified
-                If (tMethodFilter '= "") && (tMethodName '= tMethodFilter) {
-                    Continue
-                }
-                
-                Set tTest = {}
-                Set tTest.className = tClassName
-                Set tTest.method = tMethodName
-                Set tResult.summary.total = tResult.summary.total + 1
-                
-                ; Run test in isolated context
-                Set tTestResult = ..RunSingleTest(tClassName, tMethodName)
-                Set tTest.status = tTestResult.status
-                Set tTest.message = tTestResult.message
-                Set tTest.duration = tTestResult.duration
-                
-                ; Update summary
-                If tTest.status = "passed" {
-                    Set tResult.summary.passed = tResult.summary.passed + 1
-                } ElseIf tTest.status = "failed" {
-                    Set tResult.summary.failed = tResult.summary.failed + 1
-                } ElseIf tTest.status = "error" {
-                    Set tResult.summary.errors = tResult.summary.errors + 1
-                } Else {
-                    Set tResult.summary.skipped = tResult.summary.skipped + 1
-                }
-                
-                Do tResult.tests.%Push(tTest)
-            }
+        ; Check if this is a package or a class
+        If ##class(%Dictionary.CompiledClass).%ExistsId(tClassName) {
+            ; Single class
+            Do ..RunTestsForClass(tClassName, tMethodFilter, .tResult)
         } Else {
-            ; Not a test class
-            Set tResult.status = "error"
-            Set tResult.error = "Class "_tClassName_" is not a test class"
+            ; Assume it's a package - find all test classes in the package
+            Set tTestClasses = ..GetTestClassesInPackage(tClassName)
+            Set tClassIter = tTestClasses.%GetIterator()
+            While tClassIter.%GetNext(.tKey, .tTestClass) {
+                Do ..RunTestsForClass(tTestClass, "", .tResult)
+            }
         }
         
         ; Calculate execution time
@@ -81,6 +51,77 @@ ClassMethod RunTests(pTestSpec As %String, pNamespace As %String = "HSCUSTOM") A
     Catch ex {
         Return "{""status"":""error"",""error"":"""_$ZCONVERT(ex.DisplayString(), "O", "JS")_"""}"
     }
+}
+
+/// Run tests for a single class
+ClassMethod RunTestsForClass(pClassName As %String, pMethodFilter As %String, ByRef pResult As %DynamicObject) [ Private ]
+{
+    If $CLASSMETHOD(pClassName, "%Extends", "%UnitTest.TestCase") {
+        ; Get test methods
+        Set tMethods = ..GetTestMethods(pClassName)
+        
+        ; Run each test method directly
+        Set tMethodIter = tMethods.%GetIterator()
+        While tMethodIter.%GetNext(.tKey, .tMethodName) {
+            ; Apply method filter if specified
+            If (pMethodFilter '= "") && (tMethodName '= pMethodFilter) {
+                Continue
+            }
+            
+            Set tTest = {}
+            Set tTest.className = pClassName
+            Set tTest.method = tMethodName
+            Set pResult.summary.total = pResult.summary.total + 1
+            
+            ; Run test in isolated context
+            Set tTestResult = ..RunSingleTest(pClassName, tMethodName)
+            Set tTest.status = tTestResult.status
+            Set tTest.message = tTestResult.message
+            Set tTest.duration = tTestResult.duration
+            
+            ; Update summary
+            If tTest.status = "passed" {
+                Set pResult.summary.passed = pResult.summary.passed + 1
+            } ElseIf tTest.status = "failed" {
+                Set pResult.summary.failed = pResult.summary.failed + 1
+            } ElseIf tTest.status = "error" {
+                Set pResult.summary.errors = pResult.summary.errors + 1
+            } Else {
+                Set pResult.summary.skipped = pResult.summary.skipped + 1
+            }
+            
+            Do pResult.tests.%Push(tTest)
+        }
+    }
+}
+
+/// Get test classes in a package
+ClassMethod GetTestClassesInPackage(pPackage As %String) As %DynamicArray [ Private ]
+{
+    Set tClasses = []
+    
+    Try {
+        ; Query for classes that extend %UnitTest.TestCase in the package
+        Set tSQL = "SELECT ID FROM %Dictionary.CompiledClass "_
+                  "WHERE ID %STARTSWITH ? "_
+                  "AND Super [ '%UnitTest.TestCase' "_
+                  "ORDER BY ID"
+        
+        Set tStatement = ##class(%SQL.Statement).%New()
+        Set tSC = tStatement.%Prepare(tSQL)
+        If $$$ISERR(tSC) Return tClasses
+        
+        Set tResultSet = tStatement.%Execute(pPackage_".")
+        
+        While tResultSet.%Next() {
+            Do tClasses.%Push(tResultSet.%Get("ID"))
+        }
+    }
+    Catch ex {
+        ; Return empty array on error
+    }
+    
+    Return tClasses
 }
 
 /// Run a single test method in isolation

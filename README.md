@@ -147,17 +147,8 @@ INFO - 🚀 FastMCP server ready for connections
 
 ### Test Tools Directly
 ```bash
-# Test all functionality
-python test_execute_final.py
-
-# Test FastMCP integration
-python test_fastmcp.py
-
 # Validate MVP implementation
 python validate_mvp.py
-
-# Test unit test implementation
-python test_unittest_final_validation.py
 ```
 
 ## Tool Documentation

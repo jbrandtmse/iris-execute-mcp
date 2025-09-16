@@ -407,35 +407,4 @@ ClassMethod TestInstanceCreation() As %String
     Quit result
 }
 
-/// Test Manager creation independently
-ClassMethod TestManagerCreation() As %String
-{
-    Set result = "{""status"":""starting""}"
-    Try {
-        // Create Manager
-        Set manager = ##class(ExecuteMCP.TestRunner.Manager).%New()
-        
-        If $ISOBJECT(manager) {
-            Set result = result _ ",""managerCreated"":true"
-            
-            // Test basic Manager properties
-            Set className = $CLASSNAME(manager)
-            Set result = result _ ",""className"":"""_className_""""
-            
-            // Try to access Manager properties/methods
-            Set manager.CurrentTest = "TestMethod"
-            Set result = result _ ",""propertySet"":true"
-        } Else {
-            Set result = result _ ",""managerCreated"":false"
-        }
-        
-        Set result = result _ ",""success"":true}"
-    }
-    Catch ex {
-        Set result = result _ ",""exception"":"""_ex.DisplayString()_""",""success"":false}"
-    }
-    
-    Quit result
-}
-
 }
